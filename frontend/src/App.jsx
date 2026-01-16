@@ -11,7 +11,9 @@ import Dashboard from './pages/Dashboard';
 import Despesas from './pages/Despesas';
 import DespesaForm from './pages/DespesaForm';
 import Vendas from './pages/Vendas';
+import VendaForm from './pages/VendaForm';
 import Receitas from './pages/Receitas';
+import ReceitaForm from './pages/ReceitaForm';
 import Cadastros from './pages/Cadastros';
 import Relatorios from './pages/Relatorios';
 import Layout from './components/Layout';
@@ -65,7 +67,11 @@ const AppRoutes = () => {
         <Route path="despesas/nova" element={<DespesaForm />} />
         <Route path="despesas/editar/:id" element={<DespesaForm />} />
         <Route path="vendas" element={<Vendas />} />
+        <Route path="vendas/nova" element={<VendaForm />} />
+        <Route path="vendas/editar/:id" element={<VendaForm />} />
         <Route path="receitas" element={<Receitas />} />
+        <Route path="receitas/nova" element={<ReceitaForm />} />
+        <Route path="receitas/editar/:id" element={<ReceitaForm />} />
         <Route path="cadastros" element={<Cadastros />} />
         <Route path="relatorios" element={<Relatorios />} />
       </Route>

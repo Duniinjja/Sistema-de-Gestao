@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -12,14 +13,21 @@ import {
   TableRow,
   Chip,
   CircularProgress,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
-import { getVendas } from '../services/api';
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
+import { getVendas, deleteVenda } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 
 const Vendas = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [vendas, setVendas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +47,21 @@ const Vendas = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta venda?')) {
+      return;
+    }
+
+    try {
+      await deleteVenda(id);
+      toast.success('Venda excluída com sucesso!');
+      loadVendas();
+    } catch (error) {
+      toast.error('Erro ao excluir venda');
+      console.error(error);
     }
   };
 
@@ -70,7 +93,11 @@ const Vendas = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4">Vendas</Typography>
-        <Button variant="contained" startIcon={<AddIcon />}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/vendas/nova')}
+        >
           Nova Venda
         </Button>
       </Box>
@@ -86,12 +113,13 @@ const Vendas = () => {
               <TableCell>Desconto</TableCell>
               <TableCell>Valor Final</TableCell>
               <TableCell>Status</TableCell>
+              <TableCell align="center">Ações</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {vendas.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   Nenhuma venda encontrada
                 </TableCell>
               </TableRow>
@@ -112,6 +140,26 @@ const Vendas = () => {
                       color={getStatusColor(venda.status)}
                       size="small"
                     />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="Editar">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => navigate(`/vendas/editar/${venda.id}`)}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Excluir">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(venda.id)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))

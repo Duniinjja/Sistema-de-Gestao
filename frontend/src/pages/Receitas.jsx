@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -12,14 +13,21 @@ import {
   TableRow,
   Chip,
   CircularProgress,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
-import { getReceitas } from '../services/api';
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
+import { getReceitas, deleteReceita } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 
 const Receitas = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [receitas, setReceitas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +47,21 @@ const Receitas = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta receita?')) {
+      return;
+    }
+
+    try {
+      await deleteReceita(id);
+      toast.success('Receita excluída com sucesso!');
+      loadReceitas();
+    } catch (error) {
+      toast.error('Erro ao excluir receita');
+      console.error(error);
     }
   };
 
@@ -70,7 +93,11 @@ const Receitas = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4">Receitas</Typography>
-        <Button variant="contained" startIcon={<AddIcon />}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => navigate('/receitas/nova')}
+        >
           Nova Receita
         </Button>
       </Box>
@@ -85,12 +112,13 @@ const Receitas = () => {
               <TableCell>Data Prevista</TableCell>
               <TableCell>Data Recebimento</TableCell>
               <TableCell>Status</TableCell>
+              <TableCell align="center">Ações</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {receitas.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">
+                <TableCell colSpan={7} align="center">
                   Nenhuma receita encontrada
                 </TableCell>
               </TableRow>
@@ -114,6 +142,26 @@ const Receitas = () => {
                       color={getStatusColor(receita.status)}
                       size="small"
                     />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="Editar">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => navigate(`/receitas/editar/${receita.id}`)}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Excluir">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(receita.id)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))

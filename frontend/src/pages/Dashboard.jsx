@@ -23,7 +23,12 @@ import {
   AttachMoney,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import { getEmpresaDashboard } from '../services/api';
+import {
+  getDespesas,
+  getVendas,
+  getReceitas,
+  getUsuarios,
+} from '../services/api';
 import { toast } from 'react-toastify';
 
 const StatCard = ({ title, value, subtitle, icon: Icon, color, trend }) => (
@@ -204,7 +209,16 @@ const AlertCard = ({ title, message, severity = 'warning', count }) => {
 const Dashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    total_receitas_mes: 0,
+    total_vendas_mes: 0,
+    total_despesas_mes: 0,
+    saldo_mes: 0,
+    total_usuarios: 0,
+    despesas_pendentes: 0,
+    vendas_mes: 0,
+    receitas_pendentes: 0,
+  });
 
   useEffect(() => {
     loadDashboard();
@@ -213,14 +227,87 @@ const Dashboard = () => {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const empresaId = user.empresa_id;
-      if (empresaId) {
-        const response = await getEmpresaDashboard(empresaId);
-        setStats(response.data.estatisticas);
-      }
+      const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
+
+      // Buscar dados em paralelo
+      const [despesasRes, vendasRes, receitasRes, usuariosRes] = await Promise.all([
+        getDespesas(params).catch(() => ({ data: [] })),
+        getVendas(params).catch(() => ({ data: [] })),
+        getReceitas(params).catch(() => ({ data: [] })),
+        getUsuarios(params).catch(() => ({ data: [] })),
+      ]);
+
+      const despesas = despesasRes.data.results || despesasRes.data || [];
+      const vendas = vendasRes.data.results || vendasRes.data || [];
+      const receitas = receitasRes.data.results || receitasRes.data || [];
+      const usuarios = usuariosRes.data.results || usuariosRes.data || [];
+
+      console.log('📊 Dados carregados:');
+      console.log('Receitas:', receitas);
+      console.log('Vendas:', vendas);
+      console.log('Despesas:', despesas);
+
+      // Calcular estatísticas do mês atual
+      const now = new Date();
+      const mesAtual = now.getMonth();
+      const anoAtual = now.getFullYear();
+
+      console.log(`📅 Filtrando por: Mês ${mesAtual + 1}/${anoAtual}`);
+
+      // Filtrar por mês atual
+      const despesasMes = despesas.filter(d => {
+        const data = new Date(d.data_vencimento);
+        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+      });
+
+      const vendasMes = vendas.filter(v => {
+        const data = new Date(v.data_venda);
+        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+      });
+
+      const receitasMes = receitas.filter(r => {
+        const data = new Date(r.data_prevista);
+        const isDoMes = data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+        console.log(`Receita "${r.descricao}": ${r.data_prevista} -> ${isDoMes ? 'SIM' : 'NÃO'}`);
+        return isDoMes;
+      });
+
+      console.log('✅ Filtrados do mês:');
+      console.log('Receitas do mês:', receitasMes);
+      console.log('Vendas do mês:', vendasMes);
+      console.log('Despesas do mês:', despesasMes);
+
+      // Calcular totais
+      const totalDespesas = despesasMes.reduce((sum, d) => sum + parseFloat(d.valor || 0), 0);
+      const totalVendas = vendasMes.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
+      const totalReceitas = receitasMes.reduce((sum, r) => {
+        const valor = parseFloat(r.valor || 0);
+        console.log(`Somando receita: ${r.descricao} = R$ ${valor}`);
+        return sum + valor;
+      }, 0);
+
+      console.log('💰 Totais calculados:');
+      console.log('Total Receitas:', totalReceitas);
+      console.log('Total Vendas:', totalVendas);
+      console.log('Total Despesas:', totalDespesas);
+
+      // Contar pendentes
+      const despesasPendentes = despesas.filter(d => d.status === 'PENDENTE' || d.status === 'VENCIDA').length;
+      const receitasPendentes = receitas.filter(r => r.status === 'PENDENTE').length;
+
+      setStats({
+        total_receitas_mes: totalReceitas,
+        total_vendas_mes: totalVendas,
+        total_despesas_mes: totalDespesas,
+        saldo_mes: totalReceitas + totalVendas - totalDespesas,
+        total_usuarios: usuarios.length,
+        despesas_pendentes: despesasPendentes,
+        vendas_mes: vendasMes.length,
+        receitas_pendentes: receitasPendentes,
+      });
     } catch (error) {
-      toast.error('Erro ao carregar dashboard');
-      console.error(error);
+      console.error('Erro ao carregar dashboard:', error);
+      toast.error('Erro ao carregar dados do dashboard');
     } finally {
       setLoading(false);
     }
@@ -287,31 +374,28 @@ const Dashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Receitas do Mês"
-            value={formatCurrency(stats?.total_receitas_mes)}
-            subtitle="Receitas recebidas"
+            value={formatCurrency(stats.total_receitas_mes)}
+            subtitle={`${stats.receitas_pendentes} pendente${stats.receitas_pendentes !== 1 ? 's' : ''}`}
             icon={AttachMoney}
             color="#4caf50"
-            trend={12}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Vendas do Mês"
-            value={formatCurrency(stats?.total_vendas_mes)}
-            subtitle="Total em vendas"
+            value={formatCurrency(stats.total_vendas_mes)}
+            subtitle={`${stats.vendas_mes} venda${stats.vendas_mes !== 1 ? 's' : ''} realizada${stats.vendas_mes !== 1 ? 's' : ''}`}
             icon={ShoppingCart}
             color="#2196f3"
-            trend={8}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Despesas do Mês"
-            value={formatCurrency(stats?.total_despesas_mes)}
-            subtitle="Gastos do período"
+            value={formatCurrency(stats.total_despesas_mes)}
+            subtitle={`${stats.despesas_pendentes} pendente${stats.despesas_pendentes !== 1 ? 's' : ''}`}
             icon={Receipt}
             color="#f44336"
-            trend={-5}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -335,19 +419,25 @@ const Dashboard = () => {
               {
                 icon: <People fontSize="small" />,
                 label: 'Total de Usuários',
-                value: stats?.total_usuarios || 0,
+                value: stats.total_usuarios,
                 color: '#1976d2',
               },
               {
                 icon: <Receipt fontSize="small" />,
                 label: 'Despesas Pendentes',
-                value: stats?.despesas_pendentes || 0,
+                value: stats.despesas_pendentes,
                 color: '#f44336',
+              },
+              {
+                icon: <AttachMoney fontSize="small" />,
+                label: 'Receitas Pendentes',
+                value: stats.receitas_pendentes,
+                color: '#4caf50',
               },
               {
                 icon: <ShoppingCart fontSize="small" />,
                 label: 'Vendas no Mês',
-                value: stats?.vendas_mes || 0,
+                value: stats.vendas_mes,
                 color: '#2196f3',
               },
             ]}
@@ -355,11 +445,11 @@ const Dashboard = () => {
         </Grid>
 
         <Grid item xs={12} md={6}>
-          {stats?.despesas_pendentes > 0 ? (
+          {stats.despesas_pendentes > 0 ? (
             <AlertCard
               severity="warning"
               title="Atenção às Despesas"
-              message={`Você tem ${stats.despesas_pendentes} despesa(s) pendente(s) que precisam de atenção.`}
+              message={`Você tem ${stats.despesas_pendentes} despesa(s) pendente(s) ou vencida(s) que precisam de atenção.`}
               count={stats.despesas_pendentes}
             />
           ) : (
@@ -393,10 +483,10 @@ const Dashboard = () => {
               <Box sx={{ mb: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Receitas
+                    Receitas + Vendas
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
-                    {formatCurrency(stats?.total_receitas_mes)}
+                    {formatCurrency(stats.total_receitas_mes + stats.total_vendas_mes)}
                   </Typography>
                 </Box>
                 <LinearProgress
@@ -420,14 +510,14 @@ const Dashboard = () => {
                     Despesas
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
-                    {formatCurrency(stats?.total_despesas_mes)}
+                    {formatCurrency(stats.total_despesas_mes)}
                   </Typography>
                 </Box>
                 <LinearProgress
                   variant="determinate"
                   value={
-                    stats?.total_receitas_mes > 0
-                      ? (stats?.total_despesas_mes / stats?.total_receitas_mes) * 100
+                    (stats.total_receitas_mes + stats.total_vendas_mes) > 0
+                      ? (stats.total_despesas_mes / (stats.total_receitas_mes + stats.total_vendas_mes)) * 100
                       : 0
                   }
                   sx={{

@@ -21,13 +21,13 @@ import {
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import {
-  getDespesa,
-  createDespesa,
-  updateDespesa,
-  getCategoriasDespesa,
+  getReceita,
+  createReceita,
+  updateReceita,
+  getCategoriasReceita,
 } from '../services/api';
 
-const DespesaForm = () => {
+const ReceitaForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
@@ -37,24 +37,24 @@ const DespesaForm = () => {
     descricao: '',
     categoria: '',
     valor: '',
-    data_vencimento: '',
-    data_pagamento: '',
+    data_prevista: '',
+    data_recebimento: '',
     status: 'PENDENTE',
-    forma_pagamento: 'DINHEIRO',
+    forma_recebimento: 'DINHEIRO',
     observacoes: '',
   });
 
   useEffect(() => {
     loadCategorias();
     if (id) {
-      loadDespesa();
+      loadReceita();
     }
   }, [id]);
 
   const loadCategorias = async () => {
     try {
       const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
-      const response = await getCategoriasDespesa(params);
+      const response = await getCategoriasReceita(params);
       setCategorias(response.data.results || response.data);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
@@ -62,23 +62,23 @@ const DespesaForm = () => {
     }
   };
 
-  const loadDespesa = async () => {
+  const loadReceita = async () => {
     try {
       setLoading(true);
-      const response = await getDespesa(id);
-      const despesa = response.data;
+      const response = await getReceita(id);
+      const receita = response.data;
       setFormData({
-        descricao: despesa.descricao || '',
-        categoria: despesa.categoria || '',
-        valor: despesa.valor || '',
-        data_vencimento: despesa.data_vencimento || '',
-        data_pagamento: despesa.data_pagamento || '',
-        status: despesa.status || 'PENDENTE',
-        forma_pagamento: despesa.forma_pagamento || 'DINHEIRO',
-        observacoes: despesa.observacoes || '',
+        descricao: receita.descricao || '',
+        categoria: receita.categoria || '',
+        valor: receita.valor || '',
+        data_prevista: receita.data_prevista || '',
+        data_recebimento: receita.data_recebimento || '',
+        status: receita.status || 'PENDENTE',
+        forma_recebimento: receita.forma_recebimento || 'DINHEIRO',
+        observacoes: receita.observacoes || '',
       });
     } catch (error) {
-      toast.error('Erro ao carregar despesa');
+      toast.error('Erro ao carregar receita');
       console.error(error);
     } finally {
       setLoading(false);
@@ -109,44 +109,30 @@ const DespesaForm = () => {
       toast.error('Valor deve ser maior que zero');
       return;
     }
-    if (!formData.data_vencimento) {
-      toast.error('Data de vencimento é obrigatória');
+    if (!formData.data_prevista) {
+      toast.error('Data prevista é obrigatória');
       return;
     }
 
     try {
       setLoading(true);
-
-      // Validar dados do usuário
-      if (!user?.empresa_id) {
-        toast.error('Usuário sem empresa vinculada');
-        return;
-      }
-
       const data = {
         ...formData,
         empresa: user.empresa_id,
         usuario_cadastro: user.id,
       };
 
-      console.log('Dados enviados:', data);
-
       if (id) {
-        await updateDespesa(id, data);
-        toast.success('Despesa atualizada com sucesso!');
+        await updateReceita(id, data);
+        toast.success('Receita atualizada com sucesso!');
       } else {
-        await createDespesa(data);
-        toast.success('Despesa cadastrada com sucesso!');
+        await createReceita(data);
+        toast.success('Receita cadastrada com sucesso!');
       }
-      navigate('/despesas');
+      navigate('/receitas');
     } catch (error) {
-      console.error('Erro ao salvar despesa:', error);
-      const errorMessage = error.response?.data?.message
-        || error.response?.data?.detail
-        || error.response?.data?.error
-        || Object.values(error.response?.data || {}).flat().join(', ')
-        || error.message;
-      toast.error('Erro ao salvar despesa: ' + errorMessage);
+      toast.error('Erro ao salvar receita');
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -165,13 +151,13 @@ const DespesaForm = () => {
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/despesas')}
+          onClick={() => navigate('/receitas')}
           variant="outlined"
         >
           Voltar
         </Button>
         <Typography variant="h4">
-          {id ? 'Editar Despesa' : 'Nova Despesa'}
+          {id ? 'Editar Receita' : 'Nova Receita'}
         </Typography>
       </Box>
 
@@ -187,7 +173,7 @@ const DespesaForm = () => {
                 value={formData.descricao}
                 onChange={handleChange}
                 required
-                placeholder="Ex: Energia Janeiro 2026"
+                placeholder="Ex: Pagamento Cliente XYZ"
               />
             </Grid>
 
@@ -232,14 +218,14 @@ const DespesaForm = () => {
               />
             </Grid>
 
-            {/* Data Vencimento */}
+            {/* Data Prevista */}
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Data de Vencimento"
-                name="data_vencimento"
+                label="Data Prevista"
+                name="data_prevista"
                 type="date"
-                value={formData.data_vencimento}
+                value={formData.data_prevista}
                 onChange={handleChange}
                 required
                 InputLabelProps={{
@@ -248,19 +234,19 @@ const DespesaForm = () => {
               />
             </Grid>
 
-            {/* Data Pagamento */}
+            {/* Data Recebimento */}
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Data de Pagamento"
-                name="data_pagamento"
+                label="Data de Recebimento"
+                name="data_recebimento"
                 type="date"
-                value={formData.data_pagamento}
+                value={formData.data_recebimento}
                 onChange={handleChange}
                 InputLabelProps={{
                   shrink: true,
                 }}
-                helperText="Deixe em branco se ainda não foi pago"
+                helperText="Deixe em branco se ainda não foi recebido"
               />
             </Grid>
 
@@ -275,22 +261,21 @@ const DespesaForm = () => {
                   label="Status"
                 >
                   <MenuItem value="PENDENTE">Pendente</MenuItem>
-                  <MenuItem value="PAGA">Paga</MenuItem>
-                  <MenuItem value="VENCIDA">Vencida</MenuItem>
+                  <MenuItem value="RECEBIDA">Recebida</MenuItem>
                   <MenuItem value="CANCELADA">Cancelada</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
 
-            {/* Forma de Pagamento */}
+            {/* Forma de Recebimento */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Forma de Pagamento</InputLabel>
+                <InputLabel>Forma de Recebimento</InputLabel>
                 <Select
-                  name="forma_pagamento"
-                  value={formData.forma_pagamento}
+                  name="forma_recebimento"
+                  value={formData.forma_recebimento}
                   onChange={handleChange}
-                  label="Forma de Pagamento"
+                  label="Forma de Recebimento"
                 >
                   <MenuItem value="DINHEIRO">Dinheiro</MenuItem>
                   <MenuItem value="PIX">PIX</MenuItem>
@@ -312,7 +297,7 @@ const DespesaForm = () => {
                 onChange={handleChange}
                 multiline
                 rows={3}
-                placeholder="Informações adicionais sobre a despesa"
+                placeholder="Informações adicionais sobre a receita"
               />
             </Grid>
 
@@ -321,7 +306,7 @@ const DespesaForm = () => {
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                 <Button
                   variant="outlined"
-                  onClick={() => navigate('/despesas')}
+                  onClick={() => navigate('/receitas')}
                   disabled={loading}
                 >
                   Cancelar
@@ -343,4 +328,4 @@ const DespesaForm = () => {
   );
 };
 
-export default DespesaForm;
+export default ReceitaForm;
