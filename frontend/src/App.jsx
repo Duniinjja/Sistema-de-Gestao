@@ -15,6 +15,7 @@ import VendaForm from './pages/VendaForm';
 import Receitas from './pages/Receitas';
 import ReceitaForm from './pages/ReceitaForm';
 import Cadastros from './pages/Cadastros';
+import CadastrosForm from './pages/CadastrosForm';
 import Relatorios from './pages/Relatorios';
 import Layout from './components/Layout';
 
@@ -73,6 +74,7 @@ const AppRoutes = () => {
         <Route path="receitas/nova" element={<ReceitaForm />} />
         <Route path="receitas/editar/:id" element={<ReceitaForm />} />
         <Route path="cadastros" element={<Cadastros />} />
+        <Route path="cadastros/nova" element={<CadastrosForm />} />
         <Route path="relatorios" element={<Relatorios />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
