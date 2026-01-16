@@ -23,28 +23,62 @@ import {
 } from '@mui/icons-material';
 import { getDespesas, deleteDespesa } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useFilter } from '../context/FilterContext';
+import AdminFilters from '../components/AdminFilters';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 
 const Despesas = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { isAdminChefe } = useAuth();
+  const {
+    getFilterParams,
+    selectedUsuario,
+    selectedEmpresa,
+    dataInicio,
+    dataFim,
+    getActiveFilterLabel,
+    getDateRangeLabel,
+  } = useFilter();
   const [despesas, setDespesas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDespesas();
-  }, []);
+  }, [selectedUsuario, selectedEmpresa, dataInicio, dataFim]);
 
   const loadDespesas = async () => {
     try {
       setLoading(true);
-      const params = user.empresa_id ? { empresa: user.empresa_id } : {};
+      const params = getFilterParams(false); // Não inclui data nos params da API
+      console.log('[Despesas] Params:', params);
       const response = await getDespesas(params);
-      setDespesas(response.data.results || response.data);
+      console.log('[Despesas] Response:', response.data);
+      let data = response.data.results || response.data;
+
+      // Garantir que data é um array
+      if (!Array.isArray(data)) {
+        console.error('[Despesas] Data não é array:', data);
+        data = [];
+      }
+
+      // Filtrar por período no frontend
+      if (dataInicio && dataFim) {
+        const dataInicioDate = new Date(dataInicio + 'T00:00:00');
+        const dataFimDate = new Date(dataFim + 'T23:59:59');
+
+        data = data.filter(d => {
+          const dataVencimento = new Date(d.data_vencimento);
+          return dataVencimento >= dataInicioDate && dataVencimento <= dataFimDate;
+        });
+      }
+
+      setDespesas(data);
     } catch (error) {
+      console.error('[Despesas] Erro:', error);
+      console.error('[Despesas] Response status:', error.response?.status);
+      console.error('[Despesas] Response data:', error.response?.data);
       toast.error('Erro ao carregar despesas');
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -82,6 +116,9 @@ const Despesas = () => {
     }).format(value);
   };
 
+  // Calcular total das despesas exibidas
+  const totalDespesas = despesas.reduce((sum, d) => sum + parseFloat(d.valor || 0), 0);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -92,8 +129,14 @@ const Despesas = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Despesas</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>Despesas</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {isAdminChefe() && getActiveFilterLabel() !== 'Visão Geral' && `${getActiveFilterLabel()} | `}
+            Período: {getDateRangeLabel()}
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -102,6 +145,21 @@ const Despesas = () => {
           Nova Despesa
         </Button>
       </Box>
+
+      {/* Filtros - com data e empresa */}
+      <AdminFilters showUsuarioFilter={false} showEmpresaFilter={true} showDateFilter={true} />
+
+      {/* Resumo */}
+      <Paper sx={{ p: 2, mb: 3, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="body1" color="text.secondary">
+            Total de Despesas no Período ({despesas.length} {despesas.length === 1 ? 'registro' : 'registros'})
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>
+            {formatCurrency(totalDespesas)}
+          </Typography>
+        </Box>
+      </Paper>
 
       <TableContainer component={Paper}>
         <Table>
@@ -120,7 +178,7 @@ const Despesas = () => {
             {despesas.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">
-                  Nenhuma despesa encontrada
+                  Nenhuma despesa encontrada no período selecionado
                 </TableCell>
               </TableRow>
             ) : (

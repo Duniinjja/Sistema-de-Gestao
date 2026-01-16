@@ -31,6 +31,7 @@ import {
   Assessment as AssessmentIcon,
   Logout as LogoutIcon,
   AccountCircle,
+  Person as PersonIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
@@ -42,7 +43,7 @@ const drawerWidthCollapsed = 72;
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, isAdminChefe } = useAuth();
+  const { user, logout, isAdminChefe, getUserPhotoUrl, getUserInitials } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [isDrawerExpanded, setIsDrawerExpanded] = useState(true);
@@ -232,6 +233,7 @@ const Layout = () => {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Avatar
+              src={getUserPhotoUrl()}
               sx={{
                 width: 40,
                 height: 40,
@@ -239,8 +241,7 @@ const Layout = () => {
                 color: 'white',
               }}
             >
-              {user?.first_name?.[0]}
-              {user?.last_name?.[0]}
+              {getUserInitials()}
             </Avatar>
             <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
               <Typography
@@ -253,7 +254,7 @@ const Layout = () => {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {user?.first_name} {user?.last_name}
+                {user?.first_name || user?.nome} {user?.last_name}
               </Typography>
               <Typography
                 variant="caption"
@@ -322,7 +323,7 @@ const Layout = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
               <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {user?.first_name} {user?.last_name}
+                {user?.first_name || user?.nome} {user?.last_name}
               </Typography>
               {isAdminChefe() && (
                 <Typography
@@ -343,14 +344,14 @@ const Layout = () => {
               }}
             >
               <Avatar
+                src={getUserPhotoUrl()}
                 sx={{
                   width: 36,
                   height: 36,
                   bgcolor: 'rgba(255, 255, 255, 0.2)',
                 }}
               >
-                {user?.first_name?.[0]}
-                {user?.last_name?.[0]}
+                {getUserInitials()}
               </Avatar>
             </IconButton>
           </Box>
@@ -371,7 +372,7 @@ const Layout = () => {
             <MenuItem disabled>
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {user?.first_name} {user?.last_name}
+                  {user?.first_name || user?.nome} {user?.last_name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {user?.email}
@@ -379,6 +380,22 @@ const Layout = () => {
               </Box>
             </MenuItem>
             <Divider />
+            <MenuItem
+              onClick={() => {
+                handleMenuClose();
+                navigate('/perfil');
+              }}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'primary.lighter',
+                },
+              }}
+            >
+              <ListItemIcon>
+                <PersonIcon fontSize="small" color="primary" />
+              </ListItemIcon>
+              Perfil
+            </MenuItem>
             <MenuItem
               onClick={handleLogout}
               sx={{

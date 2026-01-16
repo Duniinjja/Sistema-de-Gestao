@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { login as apiLogin, getCurrentUser } from '../services/api';
 
@@ -12,9 +12,19 @@ export const useAuth = () => {
   return context;
 };
 
+// URL base para mídia
+const MEDIA_BASE_URL = 'http://localhost:8000';
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Função para construir URL completa da foto
+  const getFullPhotoUrl = useCallback((photoPath) => {
+    if (!photoPath) return null;
+    if (photoPath.startsWith('http')) return photoPath;
+    return `${MEDIA_BASE_URL}${photoPath.startsWith('/') ? '' : '/'}${photoPath}`;
+  }, []);
 
   useEffect(() => {
     // Verifica se há usuário salvo no localStorage
@@ -28,7 +38,9 @@ export const AuthProvider = ({ children }) => {
 
         // Verifica se o token não expirou
         if (decoded.exp > currentTime) {
-          setUser(JSON.parse(savedUser));
+          const parsedUser = JSON.parse(savedUser);
+          // Atualiza dados do servidor para ter as informações mais recentes
+          fetchCurrentUser(parsedUser);
         } else {
           logout();
         }
@@ -39,6 +51,23 @@ export const AuthProvider = ({ children }) => {
 
     setLoading(false);
   }, []);
+
+  // Buscar dados atuais do usuário no servidor
+  const fetchCurrentUser = async (fallbackUser = null) => {
+    try {
+      const response = await getCurrentUser();
+      const userData = response.data;
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      return userData;
+    } catch (error) {
+      console.error('Erro ao buscar usuário atual:', error);
+      if (fallbackUser) {
+        setUser(fallbackUser);
+      }
+      return null;
+    }
+  };
 
   const login = async (email, password) => {
     try {
@@ -66,15 +95,36 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Atualizar dados do usuário (busca do servidor e atualiza estado)
   const updateUser = async () => {
-    try {
-      const response = await getCurrentUser();
-      const userData = response.data;
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-    } catch (error) {
-      console.error('Erro ao atualizar usuário:', error);
+    return await fetchCurrentUser();
+  };
+
+  // Atualizar dados locais do usuário imediatamente (sem fetch)
+  const updateUserLocal = (userData) => {
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+  };
+
+  // Obter URL completa da foto do usuário
+  const getUserPhotoUrl = () => {
+    return getFullPhotoUrl(user?.foto);
+  };
+
+  // Obter iniciais do usuário para avatar
+  const getUserInitials = () => {
+    const firstName = user?.first_name || user?.nome || '';
+    const lastName = user?.last_name || '';
+    if (firstName && lastName) {
+      return `${firstName[0]}${lastName[0]}`.toUpperCase();
     }
+    if (firstName) {
+      return firstName.substring(0, 2).toUpperCase();
+    }
+    if (user?.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+    return 'U';
   };
 
   const isAdminChefe = () => user?.tipo_usuario === 'ADMIN_CHEFE';
@@ -87,6 +137,10 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updateUser,
+    updateUserLocal,
+    getUserPhotoUrl,
+    getUserInitials,
+    getFullPhotoUrl,
     isAdminChefe,
     isAdminEmpresa,
     isUsuarioEmpresa,

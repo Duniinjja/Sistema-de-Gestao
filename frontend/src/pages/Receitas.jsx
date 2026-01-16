@@ -23,25 +23,49 @@ import {
 } from '@mui/icons-material';
 import { getReceitas, deleteReceita } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useFilter } from '../context/FilterContext';
+import AdminFilters from '../components/AdminFilters';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 
 const Receitas = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { isAdminChefe } = useAuth();
+  const {
+    getFilterParams,
+    selectedUsuario,
+    selectedEmpresa,
+    dataInicio,
+    dataFim,
+    getActiveFilterLabel,
+    getDateRangeLabel,
+  } = useFilter();
   const [receitas, setReceitas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadReceitas();
-  }, []);
+  }, [selectedUsuario, selectedEmpresa, dataInicio, dataFim]);
 
   const loadReceitas = async () => {
     try {
       setLoading(true);
-      const params = user.empresa_id ? { empresa: user.empresa_id } : {};
+      const params = getFilterParams(false);
       const response = await getReceitas(params);
-      setReceitas(response.data.results || response.data);
+      let data = response.data.results || response.data;
+
+      // Filtrar por período no frontend
+      if (dataInicio && dataFim) {
+        const dataInicioDate = new Date(dataInicio + 'T00:00:00');
+        const dataFimDate = new Date(dataFim + 'T23:59:59');
+
+        data = data.filter(r => {
+          const dataPrevista = new Date(r.data_prevista);
+          return dataPrevista >= dataInicioDate && dataPrevista <= dataFimDate;
+        });
+      }
+
+      setReceitas(data);
     } catch (error) {
       toast.error('Erro ao carregar receitas');
       console.error(error);
@@ -81,6 +105,9 @@ const Receitas = () => {
     }).format(value);
   };
 
+  // Calcular total das receitas exibidas
+  const totalReceitas = receitas.reduce((sum, r) => sum + parseFloat(r.valor || 0), 0);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -91,8 +118,14 @@ const Receitas = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Receitas</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>Receitas</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {isAdminChefe() && getActiveFilterLabel() !== 'Visão Geral' && `${getActiveFilterLabel()} | `}
+            Período: {getDateRangeLabel()}
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -101,6 +134,21 @@ const Receitas = () => {
           Nova Receita
         </Button>
       </Box>
+
+      {/* Filtros - com data e empresa */}
+      <AdminFilters showUsuarioFilter={false} showEmpresaFilter={true} showDateFilter={true} />
+
+      {/* Resumo */}
+      <Paper sx={{ p: 2, mb: 3, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.200' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="body1" color="text.secondary">
+            Total de Receitas no Período ({receitas.length} {receitas.length === 1 ? 'registro' : 'registros'})
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
+            {formatCurrency(totalReceitas)}
+          </Typography>
+        </Box>
+      </Paper>
 
       <TableContainer component={Paper}>
         <Table>
@@ -119,7 +167,7 @@ const Receitas = () => {
             {receitas.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center">
-                  Nenhuma receita encontrada
+                  Nenhuma receita encontrada no período selecionado
                 </TableCell>
               </TableRow>
             ) : (

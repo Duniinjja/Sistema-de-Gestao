@@ -98,6 +98,16 @@ export const deleteUsuario = (id) =>
 export const changePassword = (id, data) =>
   api.post(`/usuarios/${id}/change_password/`, data);
 
+export const getUsuario = (id) =>
+  api.get(`/usuarios/${id}/`);
+
+export const uploadFotoPerfil = (id, formData) =>
+  api.put(`/usuarios/${id}/`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
 // Despesas
 export const getDespesas = (params) =>
   api.get('/despesas/', { params });

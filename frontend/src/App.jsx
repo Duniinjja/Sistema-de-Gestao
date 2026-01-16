@@ -6,6 +6,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { FilterProvider } from './context/FilterContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Despesas from './pages/Despesas';
@@ -17,6 +18,7 @@ import ReceitaForm from './pages/ReceitaForm';
 import Cadastros from './pages/Cadastros';
 import CadastrosForm from './pages/CadastrosForm';
 import Relatorios from './pages/Relatorios';
+import Perfil from './pages/Perfil';
 import Layout from './components/Layout';
 
 const theme = createTheme({
@@ -76,6 +78,7 @@ const AppRoutes = () => {
         <Route path="cadastros" element={<Cadastros />} />
         <Route path="cadastros/nova" element={<CadastrosForm />} />
         <Route path="relatorios" element={<Relatorios />} />
+        <Route path="perfil" element={<Perfil />} />
       </Route>
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
@@ -88,8 +91,9 @@ const App = () => {
       <CssBaseline />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
-          <ToastContainer
+          <FilterProvider>
+            <AppRoutes />
+            <ToastContainer
             position="top-right"
             autoClose={3000}
             hideProgressBar={false}
@@ -99,7 +103,8 @@ const App = () => {
             pauseOnFocusLoss
             draggable
             pauseOnHover
-          />
+            />
+          </FilterProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

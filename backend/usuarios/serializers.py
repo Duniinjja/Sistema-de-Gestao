@@ -21,6 +21,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'tipo_usuario': self.user.tipo_usuario,
             'empresa_id': self.user.empresa_id if self.user.empresa else None,
             'empresa_nome': self.user.empresa.nome if self.user.empresa else None,
+            'telefone': self.user.telefone,
+            'foto': self.user.foto.url if self.user.foto else None,
+            'is_active': self.user.is_active,
         }
 
         return data
