@@ -138,19 +138,7 @@ const Receitas = () => {
       {/* Filtros - com data e empresa */}
       <AdminFilters showUsuarioFilter={false} showEmpresaFilter={true} showDateFilter={true} />
 
-      {/* Resumo */}
-      <Paper sx={{ p: 2, mb: 3, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.200' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body1" color="text.secondary">
-            Total de Receitas no Período ({receitas.length} {receitas.length === 1 ? 'registro' : 'registros'})
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
-            {formatCurrency(totalReceitas)}
-          </Typography>
-        </Box>
-      </Paper>
-
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ mt: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -217,6 +205,18 @@ const Receitas = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Total de Receitas - no final da página */}
+      <Paper sx={{ p: 2, mt: 3, bgcolor: 'success.50', border: '1px solid', borderColor: 'success.200' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="body1" color="text.secondary">
+            Total de Receitas no Período ({receitas.length} {receitas.length === 1 ? 'registro' : 'registros'})
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
+            {formatCurrency(totalReceitas)}
+          </Typography>
+        </Box>
+      </Paper>
     </Box>
   );
 };

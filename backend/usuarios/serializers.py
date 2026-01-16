@@ -44,17 +44,26 @@ class UsuarioSerializer(serializers.ModelSerializer):
     """
     Serializer para o model Usuario.
     """
-    empresa_nome = serializers.CharField(source='empresa.nome', read_only=True)
+    empresa_nome = serializers.SerializerMethodField()
+    empresa_id = serializers.SerializerMethodField()
     password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = Usuario
         fields = [
             'id', 'email', 'first_name', 'last_name', 'tipo_usuario',
-            'empresa', 'empresa_nome', 'telefone', 'foto', 'is_active',
+            'empresa', 'empresa_id', 'empresa_nome', 'telefone', 'foto', 'is_active',
             'password', 'criado_em', 'atualizado_em'
         ]
         read_only_fields = ['criado_em', 'atualizado_em']
+
+    def get_empresa_nome(self, obj):
+        """Retorna nome da empresa ou None se não tiver"""
+        return obj.empresa.nome if obj.empresa else None
+
+    def get_empresa_id(self, obj):
+        """Retorna ID da empresa ou None se não tiver"""
+        return obj.empresa.id if obj.empresa else None
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
@@ -70,11 +79,46 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
+
+        # PROTEÇÃO: Campos críticos que NUNCA devem ser alterados via update normal
+        # tipo_usuario e empresa só podem ser alterados por Admin Chefe via endpoint específico
+        campos_protegidos = ['tipo_usuario', 'empresa', 'is_active', 'is_staff', 'is_superuser']
+
+        # Verificar se o request está disponível no contexto
+        request = self.context.get('request')
+        is_admin_chefe = request and request.user.tipo_usuario == 'ADMIN_CHEFE'
+
+        # Se não for admin chefe editando outro usuário, proteger campos críticos
+        is_editing_self = request and request.user.id == instance.id
+
         for attr, value in validated_data.items():
+            # Se for campo protegido
+            if attr in campos_protegidos:
+                # Só permite se for Admin Chefe editando OUTRO usuário
+                if is_admin_chefe and not is_editing_self:
+                    setattr(instance, attr, value)
+                # Se for o próprio usuário editando, ignora silenciosamente
+                continue
             setattr(instance, attr, value)
+
         if password:
             instance.set_password(password)
         instance.save()
+        return instance
+
+
+class UsuarioFotoSerializer(serializers.ModelSerializer):
+    """
+    Serializer específico para upload de foto - NÃO altera outros campos.
+    """
+    class Meta:
+        model = Usuario
+        fields = ['foto']
+
+    def update(self, instance, validated_data):
+        # Apenas atualiza a foto, nada mais
+        instance.foto = validated_data.get('foto', instance.foto)
+        instance.save(update_fields=['foto'])
         return instance
 
 

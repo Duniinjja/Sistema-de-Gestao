@@ -21,7 +21,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
-import { getCurrentUser, updateUsuario, changePassword, uploadFotoPerfil } from '../services/api';
+import { getCurrentUser, updateUsuario, changePassword, uploadFotoPerfil, removeFotoPerfil } from '../services/api';
 import { toast } from 'react-toastify';
 
 const Perfil = () => {
@@ -68,8 +68,13 @@ const Perfil = () => {
         email: userData.email || '',
         telefone: userData.telefone || '',
       });
-      // Atualiza o contexto com os dados mais recentes
-      updateUserLocal(userData);
+      // Mesclar dados da resposta com dados existentes do usuário
+      // para garantir que campos importantes não sejam perdidos
+      const mergedUserData = {
+        ...user,
+        ...userData,
+      };
+      updateUserLocal(mergedUserData);
     } catch (error) {
       toast.error('Erro ao carregar dados do perfil');
       console.error(error);
@@ -140,24 +145,26 @@ const Perfil = () => {
     try {
       setUploadingPhoto(true);
 
+      // Usar endpoint seguro que SÓ altera a foto
       const formDataUpload = new FormData();
       formDataUpload.append('foto', selectedFile);
-      // Manter outros dados do usuário
-      formDataUpload.append('first_name', formData.first_name);
-      formDataUpload.append('last_name', formData.last_name);
-      formDataUpload.append('email', formData.email);
-      formDataUpload.append('telefone', formData.telefone);
 
       const response = await uploadFotoPerfil(user.id, formDataUpload);
 
-      // Atualizar contexto imediatamente
-      updateUserLocal(response.data);
+      // O backend retorna os dados completos do usuário
+      // Mesclar para garantir consistência
+      const mergedUserData = {
+        ...user,
+        ...response.data,
+      };
+      updateUserLocal(mergedUserData);
 
       toast.success('Foto atualizada com sucesso!');
       setSelectedFile(null);
       setPhotoPreview(null);
     } catch (error) {
-      toast.error('Erro ao atualizar foto');
+      const errorMsg = error.response?.data?.detail || 'Erro ao atualizar foto';
+      toast.error(errorMsg);
       console.error(error);
     } finally {
       setUploadingPhoto(false);
@@ -170,21 +177,22 @@ const Perfil = () => {
     try {
       setUploadingPhoto(true);
 
-      const formDataUpload = new FormData();
-      formDataUpload.append('foto', ''); // Enviar vazio para remover
-      formDataUpload.append('first_name', formData.first_name);
-      formDataUpload.append('last_name', formData.last_name);
-      formDataUpload.append('email', formData.email);
-      formDataUpload.append('telefone', formData.telefone);
+      // Usar endpoint seguro DELETE para remover foto
+      const response = await removeFotoPerfil(user.id);
 
-      const response = await uploadFotoPerfil(user.id, formDataUpload);
-
-      updateUserLocal(response.data);
+      // Mesclar dados da resposta com dados existentes do usuário
+      const mergedUserData = {
+        ...user,
+        ...response.data,
+        foto: null, // Garantir que foto seja null
+      };
+      updateUserLocal(mergedUserData);
       toast.success('Foto removida com sucesso!');
       setPhotoPreview(null);
       setSelectedFile(null);
     } catch (error) {
-      toast.error('Erro ao remover foto');
+      const errorMsg = error.response?.data?.detail || 'Erro ao remover foto';
+      toast.error(errorMsg);
       console.error(error);
     } finally {
       setUploadingPhoto(false);
@@ -249,8 +257,12 @@ const Perfil = () => {
     try {
       setSaving(true);
       const response = await updateUsuario(user.id, formData);
-      // Atualiza o contexto imediatamente
-      updateUserLocal(response.data);
+      // Mesclar dados da resposta com dados existentes do usuário
+      const mergedUserData = {
+        ...user,
+        ...response.data,
+      };
+      updateUserLocal(mergedUserData);
       toast.success('Perfil atualizado com sucesso!');
     } catch (error) {
       toast.error('Erro ao atualizar perfil');
@@ -280,8 +292,18 @@ const Perfil = () => {
         confirmar_senha: '',
       });
     } catch (error) {
-      if (error.response?.data?.old_password) {
-        setErrors(prev => ({ ...prev, senha_atual: 'Senha atual incorreta' }));
+      const responseData = error.response?.data;
+
+      // Verifica diferentes formatos de erro do backend
+      if (responseData?.old_password) {
+        // Formato: { old_password: ['Senha atual incorreta.'] }
+        const msg = Array.isArray(responseData.old_password)
+          ? responseData.old_password[0]
+          : responseData.old_password;
+        setErrors(prev => ({ ...prev, senha_atual: msg }));
+      } else if (responseData?.detail) {
+        // Formato: { detail: 'Mensagem de erro' }
+        toast.error(responseData.detail);
       } else {
         toast.error('Erro ao alterar senha');
       }

@@ -19,11 +19,25 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Função para construir URL completa da foto
+  // Função para construir URL completa da foto (com validação robusta)
   const getFullPhotoUrl = useCallback((photoPath) => {
-    if (!photoPath) return null;
-    if (photoPath.startsWith('http')) return photoPath;
-    return `${MEDIA_BASE_URL}${photoPath.startsWith('/') ? '' : '/'}${photoPath}`;
+    // Validação rigorosa - retorna null se não for uma string válida
+    if (!photoPath || typeof photoPath !== 'string' || photoPath.trim() === '') {
+      return null;
+    }
+
+    try {
+      // Se já é uma URL completa, retorna como está
+      if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+        return photoPath;
+      }
+      // Constrói a URL completa
+      const separator = photoPath.startsWith('/') ? '' : '/';
+      return `${MEDIA_BASE_URL}${separator}${photoPath}`;
+    } catch (error) {
+      console.error('Erro ao processar URL da foto:', error);
+      return null;
+    }
   }, []);
 
   useEffect(() => {
@@ -106,25 +120,43 @@ export const AuthProvider = ({ children }) => {
     setUser(userData);
   };
 
-  // Obter URL completa da foto do usuário
+  // Obter URL completa da foto do usuário (com fallback seguro)
   const getUserPhotoUrl = () => {
-    return getFullPhotoUrl(user?.foto);
+    try {
+      const foto = user?.foto;
+      // Verifica se foto existe e é uma string válida
+      if (foto && typeof foto === 'string' && foto.trim() !== '') {
+        return getFullPhotoUrl(foto);
+      }
+      return null;
+    } catch (error) {
+      console.error('Erro ao obter URL da foto:', error);
+      return null;
+    }
   };
 
-  // Obter iniciais do usuário para avatar
+  // Obter iniciais do usuário para avatar (com fallback seguro)
   const getUserInitials = () => {
-    const firstName = user?.first_name || user?.nome || '';
-    const lastName = user?.last_name || '';
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    try {
+      const firstName = user?.first_name || user?.nome || '';
+      const lastName = user?.last_name || '';
+
+      if (typeof firstName === 'string' && firstName.length > 0) {
+        if (typeof lastName === 'string' && lastName.length > 0) {
+          return `${firstName[0]}${lastName[0]}`.toUpperCase();
+        }
+        return firstName.substring(0, 2).toUpperCase();
+      }
+
+      if (user?.email && typeof user.email === 'string') {
+        return user.email.substring(0, 2).toUpperCase();
+      }
+
+      return 'U';
+    } catch (error) {
+      console.error('Erro ao obter iniciais:', error);
+      return 'U';
     }
-    if (firstName) {
-      return firstName.substring(0, 2).toUpperCase();
-    }
-    if (user?.email) {
-      return user.email.substring(0, 2).toUpperCase();
-    }
-    return 'U';
   };
 
   const isAdminChefe = () => user?.tipo_usuario === 'ADMIN_CHEFE';

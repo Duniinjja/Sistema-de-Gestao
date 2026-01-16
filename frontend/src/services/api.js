@@ -101,12 +101,17 @@ export const changePassword = (id, data) =>
 export const getUsuario = (id) =>
   api.get(`/usuarios/${id}/`);
 
+// Upload de foto de perfil - endpoint seguro que só altera a foto
 export const uploadFotoPerfil = (id, formData) =>
-  api.put(`/usuarios/${id}/`, formData, {
+  api.post(`/usuarios/${id}/upload_foto/`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
+
+// Remover foto de perfil
+export const removeFotoPerfil = (id) =>
+  api.delete(`/usuarios/${id}/upload_foto/`);
 
 // Despesas
 export const getDespesas = (params) =>

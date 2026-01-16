@@ -51,14 +51,11 @@ const Despesas = () => {
     try {
       setLoading(true);
       const params = getFilterParams(false); // Não inclui data nos params da API
-      console.log('[Despesas] Params:', params);
       const response = await getDespesas(params);
-      console.log('[Despesas] Response:', response.data);
       let data = response.data.results || response.data;
 
       // Garantir que data é um array
       if (!Array.isArray(data)) {
-        console.error('[Despesas] Data não é array:', data);
         data = [];
       }
 
@@ -75,9 +72,7 @@ const Despesas = () => {
 
       setDespesas(data);
     } catch (error) {
-      console.error('[Despesas] Erro:', error);
-      console.error('[Despesas] Response status:', error.response?.status);
-      console.error('[Despesas] Response data:', error.response?.data);
+      console.error('Erro ao carregar despesas:', error);
       toast.error('Erro ao carregar despesas');
     } finally {
       setLoading(false);
@@ -149,19 +144,7 @@ const Despesas = () => {
       {/* Filtros - com data e empresa */}
       <AdminFilters showUsuarioFilter={false} showEmpresaFilter={true} showDateFilter={true} />
 
-      {/* Resumo */}
-      <Paper sx={{ p: 2, mb: 3, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body1" color="text.secondary">
-            Total de Despesas no Período ({despesas.length} {despesas.length === 1 ? 'registro' : 'registros'})
-          </Typography>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>
-            {formatCurrency(totalDespesas)}
-          </Typography>
-        </Box>
-      </Paper>
-
-      <TableContainer component={Paper}>
+      <TableContainer component={Paper} sx={{ mt: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -224,6 +207,18 @@ const Despesas = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Total de Despesas - no final da página */}
+      <Paper sx={{ p: 2, mt: 3, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="body1" color="text.secondary">
+            Total de Despesas no Período ({despesas.length} {despesas.length === 1 ? 'registro' : 'registros'})
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>
+            {formatCurrency(totalDespesas)}
+          </Typography>
+        </Box>
+      </Paper>
     </Box>
   );
 };
