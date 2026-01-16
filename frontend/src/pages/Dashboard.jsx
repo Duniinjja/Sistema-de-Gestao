@@ -19,19 +19,21 @@ import {
   Warning,
   ShoppingCart,
   Receipt,
-  People,
+  Business,
   AttachMoney,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { useFilter } from '../context/FilterContext';
+import AdminFilters from '../components/AdminFilters';
 import {
   getDespesas,
   getVendas,
   getReceitas,
-  getUsuarios,
+  getEmpresas,
 } from '../services/api';
 import { toast } from 'react-toastify';
 
-const StatCard = ({ title, value, subtitle, icon: Icon, color, trend }) => (
+const StatCard = ({ title, value, subtitle, icon: Icon, color }) => (
   <Card
     sx={{
       height: '100%',
@@ -72,24 +74,6 @@ const StatCard = ({ title, value, subtitle, icon: Icon, color, trend }) => (
             <Typography variant="caption" color="text.secondary">
               {subtitle}
             </Typography>
-          )}
-          {trend && (
-            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              {trend > 0 ? (
-                <TrendingUp fontSize="small" sx={{ color: 'success.main' }} />
-              ) : (
-                <TrendingDown fontSize="small" sx={{ color: 'error.main' }} />
-              )}
-              <Typography
-                variant="caption"
-                sx={{
-                  color: trend > 0 ? 'success.main' : 'error.main',
-                  fontWeight: 600,
-                }}
-              >
-                {trend > 0 ? '+' : ''}{trend}% vs mês anterior
-              </Typography>
-            </Box>
           )}
         </Box>
         <Avatar
@@ -207,102 +191,92 @@ const AlertCard = ({ title, message, severity = 'warning', count }) => {
 };
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, isAdminChefe } = useAuth();
+  const {
+    getFilterParams,
+    selectedUsuario,
+    selectedEmpresa,
+    dataInicio,
+    dataFim,
+    getActiveFilterLabel,
+    getDateRangeLabel,
+  } = useFilter();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    total_receitas_mes: 0,
-    total_vendas_mes: 0,
-    total_despesas_mes: 0,
-    saldo_mes: 0,
-    total_usuarios: 0,
+    total_receitas: 0,
+    total_vendas: 0,
+    total_despesas: 0,
+    saldo: 0,
+    total_empresas: 0,
     despesas_pendentes: 0,
-    vendas_mes: 0,
+    vendas_periodo: 0,
     receitas_pendentes: 0,
   });
 
   useEffect(() => {
     loadDashboard();
-  }, []);
+  }, [selectedUsuario, selectedEmpresa, dataInicio, dataFim]);
 
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
+      const params = getFilterParams(true);
 
       // Buscar dados em paralelo
-      const [despesasRes, vendasRes, receitasRes, usuariosRes] = await Promise.all([
+      const requests = [
         getDespesas(params).catch(() => ({ data: [] })),
         getVendas(params).catch(() => ({ data: [] })),
         getReceitas(params).catch(() => ({ data: [] })),
-        getUsuarios(params).catch(() => ({ data: [] })),
-      ]);
+      ];
 
-      const despesas = despesasRes.data.results || despesasRes.data || [];
-      const vendas = vendasRes.data.results || vendasRes.data || [];
-      const receitas = receitasRes.data.results || receitasRes.data || [];
-      const usuarios = usuariosRes.data.results || usuariosRes.data || [];
+      // Admin Chefe também busca empresas
+      if (isAdminChefe()) {
+        requests.push(getEmpresas().catch(() => ({ data: [] })));
+      }
 
-      console.log('📊 Dados carregados:');
-      console.log('Receitas:', receitas);
-      console.log('Vendas:', vendas);
-      console.log('Despesas:', despesas);
+      const results = await Promise.all(requests);
 
-      // Calcular estatísticas do mês atual
-      const now = new Date();
-      const mesAtual = now.getMonth();
-      const anoAtual = now.getFullYear();
+      const despesas = results[0].data.results || results[0].data || [];
+      const vendas = results[1].data.results || results[1].data || [];
+      const receitas = results[2].data.results || results[2].data || [];
+      const empresas = isAdminChefe() ? (results[3]?.data.results || results[3]?.data || []) : [];
 
-      console.log(`📅 Filtrando por: Mês ${mesAtual + 1}/${anoAtual}`);
+      // Filtrar por período selecionado
+      const dataInicioDate = new Date(dataInicio + 'T00:00:00');
+      const dataFimDate = new Date(dataFim + 'T23:59:59');
 
-      // Filtrar por mês atual
-      const despesasMes = despesas.filter(d => {
+      const despesasPeriodo = despesas.filter(d => {
         const data = new Date(d.data_vencimento);
-        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+        return data >= dataInicioDate && data <= dataFimDate;
       });
 
-      const vendasMes = vendas.filter(v => {
+      const vendasPeriodo = vendas.filter(v => {
         const data = new Date(v.data_venda);
-        return data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+        return data >= dataInicioDate && data <= dataFimDate;
       });
 
-      const receitasMes = receitas.filter(r => {
+      const receitasPeriodo = receitas.filter(r => {
         const data = new Date(r.data_prevista);
-        const isDoMes = data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
-        console.log(`Receita "${r.descricao}": ${r.data_prevista} -> ${isDoMes ? 'SIM' : 'NÃO'}`);
-        return isDoMes;
+        return data >= dataInicioDate && data <= dataFimDate;
       });
 
-      console.log('✅ Filtrados do mês:');
-      console.log('Receitas do mês:', receitasMes);
-      console.log('Vendas do mês:', vendasMes);
-      console.log('Despesas do mês:', despesasMes);
+      // Calcular totais do período
+      const totalDespesas = despesasPeriodo.reduce((sum, d) => sum + parseFloat(d.valor || 0), 0);
+      const totalVendas = vendasPeriodo.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
+      const totalReceitas = receitasPeriodo.reduce((sum, r) => sum + parseFloat(r.valor || 0), 0);
 
-      // Calcular totais
-      const totalDespesas = despesasMes.reduce((sum, d) => sum + parseFloat(d.valor || 0), 0);
-      const totalVendas = vendasMes.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
-      const totalReceitas = receitasMes.reduce((sum, r) => {
-        const valor = parseFloat(r.valor || 0);
-        console.log(`Somando receita: ${r.descricao} = R$ ${valor}`);
-        return sum + valor;
-      }, 0);
-
-      console.log('💰 Totais calculados:');
-      console.log('Total Receitas:', totalReceitas);
-      console.log('Total Vendas:', totalVendas);
-      console.log('Total Despesas:', totalDespesas);
-
-      // Contar pendentes
+      // Contar pendentes (em todo o sistema, não só no período)
       const despesasPendentes = despesas.filter(d => d.status === 'PENDENTE' || d.status === 'VENCIDA').length;
       const receitasPendentes = receitas.filter(r => r.status === 'PENDENTE').length;
 
       setStats({
-        total_receitas_mes: totalReceitas,
-        total_vendas_mes: totalVendas,
-        total_despesas_mes: totalDespesas,
-        saldo_mes: totalReceitas + totalVendas - totalDespesas,
-        total_usuarios: usuarios.length,
+        total_receitas: totalReceitas,
+        total_vendas: totalVendas,
+        total_despesas: totalDespesas,
+        saldo: totalReceitas + totalVendas - totalDespesas,
+        total_empresas: empresas.length,
         despesas_pendentes: despesasPendentes,
-        vendas_mes: vendasMes.length,
+        vendas_periodo: vendasPeriodo.length,
         receitas_pendentes: receitasPendentes,
       });
     } catch (error) {
@@ -340,7 +314,38 @@ const Dashboard = () => {
     );
   }
 
-  const saldoMes = stats?.saldo_mes || 0;
+  const saldo = stats?.saldo || 0;
+
+  // Itens de informações rápidas - diferentes para Admin Chefe e outros usuários
+  const infoItems = isAdminChefe()
+    ? [
+        {
+          icon: <Business fontSize="small" />,
+          label: 'Total de Empresas',
+          value: stats.total_empresas,
+          color: '#9c27b0',
+        },
+      ]
+    : [
+        {
+          icon: <Receipt fontSize="small" />,
+          label: 'Despesas Pendentes',
+          value: stats.despesas_pendentes,
+          color: '#f44336',
+        },
+        {
+          icon: <AttachMoney fontSize="small" />,
+          label: 'Receitas Pendentes',
+          value: stats.receitas_pendentes,
+          color: '#4caf50',
+        },
+        {
+          icon: <ShoppingCart fontSize="small" />,
+          label: 'Vendas no Período',
+          value: stats.vendas_periodo,
+          color: '#2196f3',
+        },
+      ];
 
   return (
     <Box>
@@ -357,24 +362,22 @@ const Dashboard = () => {
             WebkitTextFillColor: 'transparent',
           }}
         >
-          Dashboard
+          Dashboard {isAdminChefe() && '- Admin Chefe'}
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Visão geral da empresa • {new Date().toLocaleDateString('pt-BR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
+          {isAdminChefe() ? getActiveFilterLabel() : 'Visão geral da empresa'} | Período: {getDateRangeLabel()}
         </Typography>
       </Box>
+
+      {/* Filtros - visível para todos */}
+      <AdminFilters showUsuarioFilter={true} showEmpresaFilter={true} showDateFilter={true} />
 
       {/* Stats Cards */}
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Receitas do Mês"
-            value={formatCurrency(stats.total_receitas_mes)}
+            title="Receitas do Período"
+            value={formatCurrency(stats.total_receitas)}
             subtitle={`${stats.receitas_pendentes} pendente${stats.receitas_pendentes !== 1 ? 's' : ''}`}
             icon={AttachMoney}
             color="#4caf50"
@@ -382,17 +385,17 @@ const Dashboard = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Vendas do Mês"
-            value={formatCurrency(stats.total_vendas_mes)}
-            subtitle={`${stats.vendas_mes} venda${stats.vendas_mes !== 1 ? 's' : ''} realizada${stats.vendas_mes !== 1 ? 's' : ''}`}
+            title="Vendas do Período"
+            value={formatCurrency(stats.total_vendas)}
+            subtitle={`${stats.vendas_periodo} venda${stats.vendas_periodo !== 1 ? 's' : ''} realizada${stats.vendas_periodo !== 1 ? 's' : ''}`}
             icon={ShoppingCart}
             color="#2196f3"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Despesas do Mês"
-            value={formatCurrency(stats.total_despesas_mes)}
+            title="Despesas do Período"
+            value={formatCurrency(stats.total_despesas)}
             subtitle={`${stats.despesas_pendentes} pendente${stats.despesas_pendentes !== 1 ? 's' : ''}`}
             icon={Receipt}
             color="#f44336"
@@ -400,11 +403,11 @@ const Dashboard = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title="Saldo do Mês"
-            value={formatCurrency(saldoMes)}
-            subtitle={saldoMes >= 0 ? 'Resultado positivo' : 'Resultado negativo'}
+            title="Saldo do Período"
+            value={formatCurrency(saldo)}
+            subtitle={saldo >= 0 ? 'Resultado positivo' : 'Resultado negativo'}
             icon={AccountBalance}
-            color={saldoMes >= 0 ? '#4caf50' : '#f44336'}
+            color={saldo >= 0 ? '#4caf50' : '#f44336'}
           />
         </Grid>
       </Grid>
@@ -415,32 +418,7 @@ const Dashboard = () => {
           <InfoCard
             title="Informações Rápidas"
             color="#1976d2"
-            items={[
-              {
-                icon: <People fontSize="small" />,
-                label: 'Total de Usuários',
-                value: stats.total_usuarios,
-                color: '#1976d2',
-              },
-              {
-                icon: <Receipt fontSize="small" />,
-                label: 'Despesas Pendentes',
-                value: stats.despesas_pendentes,
-                color: '#f44336',
-              },
-              {
-                icon: <AttachMoney fontSize="small" />,
-                label: 'Receitas Pendentes',
-                value: stats.receitas_pendentes,
-                color: '#4caf50',
-              },
-              {
-                icon: <ShoppingCart fontSize="small" />,
-                label: 'Vendas no Mês',
-                value: stats.vendas_mes,
-                color: '#2196f3',
-              },
-            ]}
+            items={infoItems}
           />
         </Grid>
 
@@ -463,7 +441,7 @@ const Dashboard = () => {
         </Grid>
       </Grid>
 
-      {/* Additional Info */}
+      {/* Resumo Financeiro */}
       <Grid container spacing={3} sx={{ mt: 2 }}>
         <Grid item xs={12}>
           <Paper
@@ -477,7 +455,10 @@ const Dashboard = () => {
             }}
           >
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-              Resumo Financeiro do Mês
+              Resumo Financeiro do Período
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+              {getDateRangeLabel()}
             </Typography>
             <Box sx={{ mt: 3 }}>
               <Box sx={{ mb: 2 }}>
@@ -486,7 +467,7 @@ const Dashboard = () => {
                     Receitas + Vendas
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
-                    {formatCurrency(stats.total_receitas_mes + stats.total_vendas_mes)}
+                    {formatCurrency(stats.total_receitas + stats.total_vendas)}
                   </Typography>
                 </Box>
                 <LinearProgress
@@ -510,14 +491,14 @@ const Dashboard = () => {
                     Despesas
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
-                    {formatCurrency(stats.total_despesas_mes)}
+                    {formatCurrency(stats.total_despesas)}
                   </Typography>
                 </Box>
                 <LinearProgress
                   variant="determinate"
                   value={
-                    (stats.total_receitas_mes + stats.total_vendas_mes) > 0
-                      ? (stats.total_despesas_mes / (stats.total_receitas_mes + stats.total_vendas_mes)) * 100
+                    (stats.total_receitas + stats.total_vendas) > 0
+                      ? Math.min((stats.total_despesas / (stats.total_receitas + stats.total_vendas)) * 100, 100)
                       : 0
                   }
                   sx={{
@@ -542,10 +523,10 @@ const Dashboard = () => {
                   variant="h6"
                   sx={{
                     fontWeight: 700,
-                    color: saldoMes >= 0 ? 'success.main' : 'error.main',
+                    color: saldo >= 0 ? 'success.main' : 'error.main',
                   }}
                 >
-                  {formatCurrency(saldoMes)}
+                  {formatCurrency(saldo)}
                 </Typography>
               </Box>
             </Box>

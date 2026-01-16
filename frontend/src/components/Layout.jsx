@@ -14,8 +14,7 @@ import {
   Toolbar,
   Typography,
   Avatar,
-  Menu,
-  MenuItem,
+  Popover,
   Divider,
   Tooltip,
   useTheme,
@@ -30,9 +29,10 @@ import {
   People as PeopleIcon,
   Assessment as AssessmentIcon,
   Logout as LogoutIcon,
-  AccountCircle,
+  Person as PersonIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
+  KeyboardArrowUp as ArrowUpIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
@@ -42,9 +42,9 @@ const drawerWidthCollapsed = 72;
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, isAdminChefe } = useAuth();
+  const { user, logout, isAdminChefe, getUserPhotoUrl, getUserInitials } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const [isDrawerExpanded, setIsDrawerExpanded] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
 
@@ -59,17 +59,23 @@ const Layout = () => {
     setIsDrawerExpanded(!isDrawerExpanded);
   };
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleUserMenuOpen = (event) => {
+    setUserMenuAnchor(event.currentTarget);
   };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+  const handleUserMenuClose = () => {
+    setUserMenuAnchor(null);
   };
 
   const handleLogout = () => {
+    handleUserMenuClose();
     logout();
     navigate('/login');
+  };
+
+  const handleNavigateProfile = () => {
+    handleUserMenuClose();
+    navigate('/perfil');
   };
 
   const menuItems = [
@@ -221,26 +227,33 @@ const Layout = () => {
         })}
       </List>
 
-      {/* Footer com informações do usuário (apenas quando expandido) */}
+      {/* Footer com informações do usuário (apenas quando expandido) - clicável */}
       {!isCollapsed && (
         <Box
+          onClick={handleUserMenuOpen}
           sx={{
             p: 2,
             borderTop: '1px solid rgba(255, 255, 255, 0.12)',
             backgroundColor: 'rgba(0, 0, 0, 0.1)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.25)',
+            },
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Avatar
+              src={getUserPhotoUrl()}
               sx={{
                 width: 40,
                 height: 40,
                 bgcolor: 'rgba(255, 255, 255, 0.2)',
                 color: 'white',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
               }}
             >
-              {user?.first_name?.[0]}
-              {user?.last_name?.[0]}
+              {getUserInitials()}
             </Avatar>
             <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
               <Typography
@@ -253,7 +266,7 @@ const Layout = () => {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {user?.first_name} {user?.last_name}
+                {user?.first_name || user?.nome} {user?.last_name}
               </Typography>
               <Typography
                 variant="caption"
@@ -268,6 +281,14 @@ const Layout = () => {
                 {isAdminChefe() ? 'Admin Chefe' : user?.empresa_nome}
               </Typography>
             </Box>
+            <ArrowUpIcon
+              sx={{
+                fontSize: 18,
+                color: 'rgba(255, 255, 255, 0.6)',
+                transition: 'transform 0.2s ease',
+                transform: Boolean(userMenuAnchor) ? 'rotate(180deg)' : 'rotate(0deg)',
+              }}
+            />
           </Box>
         </Box>
       )}
@@ -318,84 +339,173 @@ const Layout = () => {
             {user?.empresa_nome || 'Sistema de Gestão'}
           </Typography>
 
-          {/* User menu */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {user?.first_name} {user?.last_name}
-              </Typography>
-              {isAdminChefe() && (
-                <Typography
-                  variant="caption"
-                  sx={{ color: 'rgba(255, 255, 255, 0.8)' }}
-                >
-                  Admin Chefe
-                </Typography>
-              )}
-            </Box>
-            <IconButton
-              color="inherit"
-              onClick={handleMenuOpen}
-              sx={{
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                },
-              }}
-            >
-              <Avatar
-                sx={{
-                  width: 36,
-                  height: 36,
-                  bgcolor: 'rgba(255, 255, 255, 0.2)',
-                }}
-              >
-                {user?.first_name?.[0]}
-                {user?.last_name?.[0]}
-              </Avatar>
-            </IconButton>
-          </Box>
-
-          {/* Dropdown menu */}
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-            PaperProps={{
-              sx: {
-                mt: 1.5,
-                minWidth: 200,
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+          {/* User menu - toda a área é clicável */}
+          <Box
+            onClick={handleUserMenuOpen}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              cursor: 'pointer',
+              padding: '8px 16px',
+              borderRadius: 3,
+              transition: 'all 0.2s ease',
+              border: '1px solid transparent',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
               },
             }}
           >
-            <MenuItem disabled>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {user?.first_name} {user?.last_name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {user?.email}
-                </Typography>
-              </Box>
-            </MenuItem>
-            <Divider />
-            <MenuItem
-              onClick={handleLogout}
+            <Box sx={{ display: { xs: 'none', sm: 'block' }, textAlign: 'right' }}>
+              <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
+                {user?.first_name || user?.nome} {user?.last_name}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: 'rgba(255, 255, 255, 0.8)', lineHeight: 1 }}
+              >
+                {isAdminChefe() ? 'Admin Chefe' : user?.empresa_nome || 'Usuário'}
+              </Typography>
+            </Box>
+            <Avatar
+              src={getUserPhotoUrl()}
               sx={{
-                color: 'error.main',
-                '&:hover': {
-                  backgroundColor: 'error.lighter',
-                },
+                width: 42,
+                height: 42,
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                border: '2px solid rgba(255, 255, 255, 0.4)',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
               }}
             >
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" color="error" />
-              </ListItemIcon>
-              Sair
-            </MenuItem>
-          </Menu>
+              {getUserInitials()}
+            </Avatar>
+          </Box>
         </Toolbar>
       </AppBar>
+
+      {/* Popover elegante do menu do usuário */}
+      <Popover
+        open={Boolean(userMenuAnchor)}
+        anchorEl={userMenuAnchor}
+        onClose={handleUserMenuClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        slotProps={{
+          paper: {
+            elevation: 0,
+            sx: {
+              width: 220,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
+              overflow: 'hidden',
+            },
+          },
+        }}
+      >
+        {/* Header do menu */}
+        <Box
+          sx={{
+            p: 2,
+            background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+            color: 'white',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar
+              src={getUserPhotoUrl()}
+              sx={{
+                width: 44,
+                height: 44,
+                border: '2px solid rgba(255, 255, 255, 0.4)',
+              }}
+            >
+              {getUserInitials()}
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {user?.first_name || user?.nome} {user?.last_name}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  opacity: 0.85,
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {user?.email}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Opções do menu */}
+        <Box sx={{ py: 1 }}>
+          <Box
+            onClick={handleNavigateProfile}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 2,
+              py: 1.25,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              '&:hover': {
+                backgroundColor: 'rgba(30, 60, 114, 0.08)',
+              },
+            }}
+          >
+            <PersonIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+              Meu Perfil
+            </Typography>
+          </Box>
+
+          <Divider sx={{ my: 0.5 }} />
+
+          <Box
+            onClick={handleLogout}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 2,
+              py: 1.25,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              '&:hover': {
+                backgroundColor: 'rgba(211, 47, 47, 0.08)',
+              },
+            }}
+          >
+            <LogoutIcon sx={{ fontSize: 20, color: 'error.main' }} />
+            <Typography variant="body2" sx={{ fontWeight: 500, color: 'error.main' }}>
+              Sair
+            </Typography>
+          </Box>
+        </Box>
+      </Popover>
 
       {/* Drawer para mobile */}
       <Drawer

@@ -12,11 +12,14 @@ import {
 } from '@mui/material';
 import { Assessment as AssessmentIcon } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { useFilter } from '../context/FilterContext';
+import AdminFilters from '../components/AdminFilters';
 import { getRelatorioFinanceiro, getRelatorioConsolidado } from '../services/api';
 import { toast } from 'react-toastify';
 
 const Relatorios = () => {
   const { user, isAdminChefe } = useAuth();
+  const { getFilterParams, selectedUsuario, selectedEmpresa, getActiveFilterLabel } = useFilter();
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [relatorio, setRelatorio] = useState(null);
@@ -31,19 +34,24 @@ const Relatorios = () => {
     try {
       setLoading(true);
 
+      const filterParams = getFilterParams();
       let response;
-      if (isAdminChefe()) {
-        // Relatório consolidado
+
+      if (isAdminChefe() && selectedEmpresa === 'todos') {
+        // Relatório consolidado (todas as empresas)
         response = await getRelatorioConsolidado({
           data_inicio: dataInicio,
           data_fim: dataFim,
+          ...filterParams,
         });
       } else {
-        // Relatório da empresa
+        // Relatório da empresa específica
+        const empresaId = selectedEmpresa !== 'todos' ? selectedEmpresa : user.empresa_id;
         response = await getRelatorioFinanceiro({
-          empresa_id: user.empresa_id,
+          empresa_id: empresaId,
           data_inicio: dataInicio,
           data_fim: dataFim,
+          ...filterParams,
         });
       }
 
@@ -66,13 +74,25 @@ const Relatorios = () => {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Relatórios
-      </Typography>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
+          Relatórios
+        </Typography>
+        {isAdminChefe() && (
+          <Typography variant="body2" color="text.secondary">
+            {getActiveFilterLabel()}
+          </Typography>
+        )}
+      </Box>
+
+      {/* Filtros Admin Chefe - sem filtro de data pois já tem próprio */}
+      <AdminFilters showUsuarioFilter={true} showEmpresaFilter={true} showDateFilter={false} />
 
       <Paper sx={{ p: 3, mt: 3 }}>
         <Typography variant="h6" gutterBottom>
-          {isAdminChefe() ? 'Relatório Consolidado' : 'Relatório Financeiro'}
+          {isAdminChefe()
+            ? (selectedEmpresa === 'todos' ? 'Relatório Consolidado' : 'Relatório por Empresa')
+            : 'Relatório Financeiro'}
         </Typography>
 
         <Grid container spacing={2} sx={{ mt: 2 }}>

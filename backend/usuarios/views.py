@@ -6,9 +6,11 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from django.db.models import Q
 
 from .models import Usuario
+from rest_framework.parsers import MultiPartParser, FormParser
 from .serializers import (
     UsuarioSerializer,
     UsuarioCreateSerializer,
+    UsuarioFotoSerializer,
     CustomTokenObtainPairSerializer
 )
 from .permissions import IsAdminChefe, IsAdminEmpresa, MultiTenantPermission
@@ -83,11 +85,17 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     def change_password(self, request, pk=None):
         """
         Permite trocar a senha do usuário.
+
+        Regras de segurança:
+        - Usuário trocando própria senha: SEMPRE deve informar senha atual
+        - Admin Chefe trocando senha de OUTRO usuário: não precisa da senha atual
         """
         usuario = self.get_object()
+        is_admin_chefe = request.user.tipo_usuario == 'ADMIN_CHEFE'
+        is_own_password = request.user.id == usuario.id
 
-        # Verifica permissão
-        if request.user.id != usuario.id and request.user.tipo_usuario != 'ADMIN_CHEFE':
+        # Verifica permissão - só pode trocar própria senha ou Admin Chefe pode trocar de outros
+        if not is_own_password and not is_admin_chefe:
             return Response(
                 {'detail': 'Você não tem permissão para trocar a senha deste usuário.'},
                 status=status.HTTP_403_FORBIDDEN
@@ -96,22 +104,102 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         old_password = request.data.get('old_password')
         new_password = request.data.get('new_password')
 
-        if not old_password or not new_password:
+        # Validação: nova senha é sempre obrigatória
+        if not new_password:
             return Response(
-                {'detail': 'old_password e new_password são obrigatórios.'},
+                {'detail': 'A nova senha é obrigatória.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verifica senha antiga (exceto Admin Chefe)
-        if request.user.tipo_usuario != 'ADMIN_CHEFE':
-            if not usuario.check_password(old_password):
+        # Validação: nova senha deve ter pelo menos 6 caracteres
+        if len(new_password) < 6:
+            return Response(
+                {'detail': 'A nova senha deve ter pelo menos 6 caracteres.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # SEGURANÇA: Se está trocando a PRÓPRIA senha, SEMPRE valida a senha atual
+        # Mesmo sendo Admin Chefe - para evitar que alguém use uma sessão aberta
+        if is_own_password:
+            if not old_password:
                 return Response(
-                    {'detail': 'Senha antiga incorreta.'},
+                    {'detail': 'A senha atual é obrigatória.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Atualiza senha
+            # Usa check_password do Django que compara hash de forma segura
+            if not usuario.check_password(old_password):
+                return Response(
+                    {'old_password': ['Senha atual incorreta.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Admin Chefe trocando senha de OUTRO usuário não precisa da senha atual
+        # (caso de reset de senha por um administrador)
+
+        # Atualiza senha usando set_password (que faz hash automático)
         usuario.set_password(new_password)
         usuario.save()
 
         return Response({'detail': 'Senha alterada com sucesso.'})
+
+    @action(detail=True, methods=['post', 'delete'], parser_classes=[MultiPartParser, FormParser])
+    def upload_foto(self, request, pk=None):
+        """
+        Endpoint seguro para upload de foto de perfil.
+        Apenas atualiza a foto, sem alterar outros campos do usuário.
+        """
+        usuario = self.get_object()
+
+        # Verifica permissão - só pode alterar própria foto ou Admin Chefe
+        if request.user.id != usuario.id and request.user.tipo_usuario != 'ADMIN_CHEFE':
+            return Response(
+                {'detail': 'Você não tem permissão para alterar a foto deste usuário.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if request.method == 'DELETE':
+            # Remove a foto
+            if usuario.foto:
+                usuario.foto.delete(save=False)
+            usuario.foto = None
+            usuario.save(update_fields=['foto'])
+            # Retorna dados completos do usuário
+            serializer = UsuarioSerializer(usuario, context={'request': request})
+            return Response(serializer.data)
+
+        # Upload de nova foto
+        foto = request.FILES.get('foto')
+        if not foto:
+            return Response(
+                {'detail': 'Nenhuma foto foi enviada.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validar tipo de arquivo
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png']
+        if foto.content_type not in allowed_types:
+            return Response(
+                {'detail': 'Formato inválido. Use JPG ou PNG.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validar tamanho (máx 5MB)
+        max_size = 5 * 1024 * 1024
+        if foto.size > max_size:
+            return Response(
+                {'detail': 'Imagem muito grande. Máximo 5MB.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Remove foto antiga se existir
+        if usuario.foto:
+            usuario.foto.delete(save=False)
+
+        # Salva nova foto
+        usuario.foto = foto
+        usuario.save(update_fields=['foto'])
+
+        # Retorna dados completos do usuário (incluindo a nova foto)
+        serializer = UsuarioSerializer(usuario, context={'request': request})
+        return Response(serializer.data)

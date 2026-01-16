@@ -23,25 +23,49 @@ import {
 } from '@mui/icons-material';
 import { getVendas, deleteVenda } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useFilter } from '../context/FilterContext';
+import AdminFilters from '../components/AdminFilters';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 
 const Vendas = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { isAdminChefe } = useAuth();
+  const {
+    getFilterParams,
+    selectedUsuario,
+    selectedEmpresa,
+    dataInicio,
+    dataFim,
+    getActiveFilterLabel,
+    getDateRangeLabel,
+  } = useFilter();
   const [vendas, setVendas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadVendas();
-  }, []);
+  }, [selectedUsuario, selectedEmpresa, dataInicio, dataFim]);
 
   const loadVendas = async () => {
     try {
       setLoading(true);
-      const params = user.empresa_id ? { empresa: user.empresa_id } : {};
+      const params = getFilterParams(false);
       const response = await getVendas(params);
-      setVendas(response.data.results || response.data);
+      let data = response.data.results || response.data;
+
+      // Filtrar por período no frontend
+      if (dataInicio && dataFim) {
+        const dataInicioDate = new Date(dataInicio + 'T00:00:00');
+        const dataFimDate = new Date(dataFim + 'T23:59:59');
+
+        data = data.filter(v => {
+          const dataVenda = new Date(v.data_venda);
+          return dataVenda >= dataInicioDate && dataVenda <= dataFimDate;
+        });
+      }
+
+      setVendas(data);
     } catch (error) {
       toast.error('Erro ao carregar vendas');
       console.error(error);
@@ -81,6 +105,9 @@ const Vendas = () => {
     }).format(value);
   };
 
+  // Calcular total das vendas exibidas
+  const totalVendas = vendas.reduce((sum, v) => sum + parseFloat(v.valor_final || 0), 0);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -91,8 +118,14 @@ const Vendas = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Vendas</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>Vendas</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {isAdminChefe() && getActiveFilterLabel() !== 'Visão Geral' && `${getActiveFilterLabel()} | `}
+            Período: {getDateRangeLabel()}
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -102,7 +135,10 @@ const Vendas = () => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
+      {/* Filtros - com data e empresa */}
+      <AdminFilters showUsuarioFilter={false} showEmpresaFilter={true} showDateFilter={true} />
+
+      <TableContainer component={Paper} sx={{ mt: 3 }}>
         <Table>
           <TableHead>
             <TableRow>
@@ -120,7 +156,7 @@ const Vendas = () => {
             {vendas.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} align="center">
-                  Nenhuma venda encontrada
+                  Nenhuma venda encontrada no período selecionado
                 </TableCell>
               </TableRow>
             ) : (
@@ -167,6 +203,18 @@ const Vendas = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Total de Vendas - no final da página */}
+      <Paper sx={{ p: 2, mt: 3, bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.200' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="body1" color="text.secondary">
+            Total de Vendas no Período ({vendas.length} {vendas.length === 1 ? 'registro' : 'registros'})
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+            {formatCurrency(totalVendas)}
+          </Typography>
+        </Box>
+      </Paper>
     </Box>
   );
 };
