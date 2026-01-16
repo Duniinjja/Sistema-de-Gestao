@@ -42,7 +42,7 @@ const drawerWidthCollapsed = 72;
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout, isAdminChefe, getUserPhotoUrl, getUserInitials } = useAuth();
+  const { user, logout, isAdminChefe, isUsuarioEmpresa, getUserPhotoUrl, getUserInitials } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const [isDrawerExpanded, setIsDrawerExpanded] = useState(true);
@@ -78,7 +78,13 @@ const Layout = () => {
     navigate('/perfil');
   };
 
-  const menuItems = [
+ const menuItems = isUsuarioEmpresa() ? [
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+    { text: 'Despesas', icon: <ReceiptIcon />, path: '/despesas' },
+    { text: 'Vendas', icon: <ShoppingCartIcon />, path: '/vendas' },
+    { text: 'Receitas', icon: <AccountBalanceIcon />, path: '/receitas' },
+    { text: 'Relatórios', icon: <AssessmentIcon />, path: '/relatorios' },
+  ] : [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
     { text: 'Despesas', icon: <ReceiptIcon />, path: '/despesas' },
     { text: 'Vendas', icon: <ShoppingCartIcon />, path: '/vendas' },

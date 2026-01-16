@@ -16,7 +16,12 @@ import VendaForm from './pages/VendaForm';
 import Receitas from './pages/Receitas';
 import ReceitaForm from './pages/ReceitaForm';
 import Cadastros from './pages/Cadastros';
-import CadastrosForm from './pages/CadastrosForm';
+import CadastroUsuarioForm from './pages/CadastroUsuarioForm';
+import CadastroEmpresaForm from './pages/CadastroEmpresaForm';
+import CadastroClienteForm from './pages/CadastroClienteForm';
+import CadastroProdutoForm from './pages/CadastroProdutoForm';
+import CadastroCategoriaForm from './pages/CadastroCategoriaForm';
+
 import Relatorios from './pages/Relatorios';
 import Perfil from './pages/Perfil';
 import Layout from './components/Layout';
@@ -76,7 +81,16 @@ const AppRoutes = () => {
         <Route path="receitas/nova" element={<ReceitaForm />} />
         <Route path="receitas/editar/:id" element={<ReceitaForm />} />
         <Route path="cadastros" element={<Cadastros />} />
-        <Route path="cadastros/nova" element={<CadastrosForm />} />
+        <Route path="cadastros/usuario/nova" element={<CadastroClienteForm />} />
+        <Route path="cadastros/usuario/editar/:id" element={<CadastroClienteForm />} />
+        <Route path="cadastros/cliente/nova" element={<CadastroClienteForm />} />
+        <Route path="cadastros/cliente/editar/:id" element={<CadastroClienteForm />} />
+        <Route path="cadastros/produto/nova" element={<CadastroProdutoForm />} />
+        <Route path="cadastros/produto/editar/:id" element={<CadastroProdutoForm />} />
+        <Route path="cadastros/categoria/nova" element={<CadastroCategoriaForm />} />
+        <Route path="cadastros/categoria/editar/:id" element={<CadastroCategoriaForm />} />
+        <Route path="cadastros/empresa/nova" element={<CadastroEmpresaForm />} />
+        <Route path="cadastros/empresa/editar/:id" element={<CadastroEmpresaForm />} />
         <Route path="relatorios" element={<Relatorios />} />
         <Route path="perfil" element={<Perfil />} />
       </Route>
