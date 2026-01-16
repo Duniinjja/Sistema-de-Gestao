@@ -5,7 +5,14 @@ import {
   Tabs,
   Tab,
   Paper,
+  Button,
 } from '@mui/material';
+
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+} from '@mui/icons-material';
 
 //teste
 
@@ -39,11 +46,25 @@ const Cadastros = () => {
         </Tabs>
 
         <TabPanel value={tabValue} index={0}>
-          <Typography>Gerenciamento de Usuários</Typography>
-          <Typography variant="body2" color="textSecondary">
-            Aqui você pode cadastrar e gerenciar usuários do sistema.
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
+            <Box>
+              <Typography>Gerenciamento de Usuários</Typography>
+              <Typography variant="body2" color="textSecondary">
+                Aqui você pode cadastrar e gerenciar usuários do sistema.
+              </Typography>
+            </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => navigate('/cadastros/nova')}
+              >
+                Novo Usuário
+              </Button>
+          </Box>
+          </Box>
         </TabPanel>
+
 
         <TabPanel value={tabValue} index={1}>
           <Typography>Gerenciamento de Clientes</Typography>
