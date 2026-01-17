@@ -81,8 +81,8 @@ const AppRoutes = () => {
         <Route path="receitas/nova" element={<ReceitaForm />} />
         <Route path="receitas/editar/:id" element={<ReceitaForm />} />
         <Route path="cadastros" element={<Cadastros />} />
-        <Route path="cadastros/usuario/nova" element={<CadastroClienteForm />} />
-        <Route path="cadastros/usuario/editar/:id" element={<CadastroClienteForm />} />
+        <Route path="cadastros/usuario/nova" element={<CadastroUsuarioForm />} />
+        <Route path="cadastros/usuario/editar/:id" element={<CadastroUsuarioForm />} />
         <Route path="cadastros/cliente/nova" element={<CadastroClienteForm />} />
         <Route path="cadastros/cliente/editar/:id" element={<CadastroClienteForm />} />
         <Route path="cadastros/produto/nova" element={<CadastroProdutoForm />} />
