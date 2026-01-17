@@ -37,7 +37,7 @@ import {
   getCategorias,
   deleteCategoria,
   getEmpresas,
-  deleteEmpresa,  
+  deleteEmpresa,
 } from '../services/api';
 
 const TabPanel = ({ children, value, index }) => {
@@ -217,11 +217,11 @@ const Cadastros = () => {
   };
 
   useEffect(() => {
-  loadUsuarios()
-  loadClientes()
-  loadProdutos()
-  loadCategorias()
-  loadEmpresas()
+    loadUsuarios()
+    loadClientes()
+    loadProdutos()
+    loadCategorias()
+    loadEmpresas()
   }, []);
 
   return (
@@ -239,254 +239,254 @@ const Cadastros = () => {
           {isAdminChefe() && (<Tab label="Categorias" />)}
         </Tabs>
 
-  {!isAdminChefe() && (
-    <Box>
-    <TabPanel value={tabValue} index={0}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-            <Box>
-              <Typography>Gerenciamento de Usuários</Typography>
-              <Typography variant="body2" color="textSecondary">
-                Aqui você pode cadastrar e gerenciar usuários do sistema.
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => navigate('/cadastros/usuario/nova')}
+        {!isAdminChefe() && (
+          <Box>
+            <TabPanel value={tabValue} index={0}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography>Gerenciamento de Usuários</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Aqui você pode cadastrar e gerenciar usuários do sistema.
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate('/cadastros/usuario/nova')}
                   >
-                  Novo Usuário
-                </Button>
-            </Box>
-          </Box>
-          <Box sx={{ mt: 2 }}>
-            <TableContainer component={Paper} sx={{ mt: 3 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nome</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell align="center">Cargo</TableCell>
-              <TableCell align="center">Status</TableCell>
-              <TableCell align="center">Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {usuarios.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  Nenhuma despesa encontrada no período selecionado
-                </TableCell>
-              </TableRow>
-            ) : (
-              usuarios.map((usuario) => (
-                <TableRow key={usuario.id}>
-                  <TableCell>{usuario.first_name} {usuario.last_name}</TableCell>
-                  <TableCell>{usuario.email}</TableCell>
-                  <TableCell align="center">{usuario.tipo_usuario === "ADMIN_EMPRESA" ? "Administrador" : "Usuário"}</TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={usuario.is_active ? 'ATIVO' : 'INATIVO'}
-                      color={getStatusColor(usuario.is_active)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="Editar">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => navigate(`/cadastros/usuario/editar/${usuario.id}`)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Excluir">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleDeleteUsuario(usuario.id)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-          </Box>
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={1}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-            <Box>
-              <Typography>Gerenciamento de Clientes</Typography>
-              <Typography variant="body2" color="textSecondary">
-                Aqui você pode cadastrar e gerenciar clientes.
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => navigate('/cadastros/cliente/nova')}
-                >
-                Novo Cliente
-              </Button>
-            </Box>
-          </Box>
-          <Box sx={{ mt: 2 }}>
-            <TableContainer component={Paper} sx={{ mt: 3 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Nome</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell align="center">Cidade</TableCell>
-                    <TableCell align="center">Status</TableCell>
-                    <TableCell align="center">Ações</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {clientes.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        Nenhuma despesa encontrada no período selecionado
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    clientes.map((cliente) => (
-                      <TableRow key={cliente.id}>
-                        <TableCell>{cliente.nome} </TableCell>
-                        <TableCell>{cliente.email}</TableCell>
-                        <TableCell align="center">{cliente.cidade} - {cliente.estado}</TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={cliente.ativo ? 'ATIVO' : 'INATIVO'}
-                            color={getStatusColor(cliente.ativo)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="Editar">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => navigate(`/cadastros/cliente/editar/${cliente.id}`)}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Excluir">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteCliente(cliente.id)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
+                    Novo Usuário
+                  </Button>
+                </Box>
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <TableContainer component={Paper} sx={{ mt: 3 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Nome</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell align="center">Cargo</TableCell>
+                        <TableCell align="center">Status</TableCell>
+                        <TableCell align="center">Ações</TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        </TabPanel>
+                    </TableHead>
+                    <TableBody>
+                      {usuarios.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center">
+                            Nenhuma despesa encontrada no período selecionado
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        usuarios.map((usuario) => (
+                          <TableRow key={usuario.id}>
+                            <TableCell>{usuario.first_name} {usuario.last_name}</TableCell>
+                            <TableCell>{usuario.email}</TableCell>
+                            <TableCell align="center">{usuario.tipo_usuario === "ADMIN_EMPRESA" ? "Administrador" : "Usuário"}</TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={usuario.is_active ? 'ATIVO' : 'INATIVO'}
+                                color={getStatusColor(usuario.is_active)}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title="Editar">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => navigate(`/cadastros/usuario/editar/${usuario.id}`)}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Excluir">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDeleteUsuario(usuario.id)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </TabPanel>
 
-        <TabPanel value={tabValue} index={2}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-            <Box>
-              <Typography>Gerenciamento de Produtos</Typography>
-              <Typography variant="body2" color="textSecondary">
-                Aqui você pode cadastrar e gerenciar produtos e serviços.
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => navigate('/cadastros/produto/nova')}
-                >
-                Novo Produto
-              </Button>
-            </Box>
-          </Box>
-          <Box sx={{ mt: 2 }}>
-            <TableContainer component={Paper} sx={{ mt: 3 }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell align="center">Código</TableCell>
-                    <TableCell align="center">Nome</TableCell>
-                    <TableCell align="center">Descrição</TableCell>
-                    <TableCell align="center">Preço</TableCell>
-                    <TableCell align="center">Estoque</TableCell>
-                    <TableCell align="center">Status</TableCell>
-                    <TableCell align="center">Ações</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {produtos.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} align="center">
-                        Nenhuma despesa encontrada no período selecionado
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    produtos.map((produto) => (
-                      <TableRow key={produto.id}>
-                        <TableCell align="center">{produto.codigo} </TableCell>
-                        <TableCell>{produto.nome} </TableCell>
-                        <TableCell>{produto.descricao}</TableCell>
-                        <TableCell align="right">R$ {produto.preco}</TableCell>
-                        <TableCell align="right">{produto.estoque}</TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={produto.ativo ? 'ATIVO' : 'INATIVO'}
-                            color={getStatusColor(produto.ativo)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="Editar">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => navigate(`/cadastros/produto/editar/${produto.id}`)}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Excluir">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteProduto(produto.id)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
+            <TabPanel value={tabValue} index={1}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography>Gerenciamento de Clientes</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Aqui você pode cadastrar e gerenciar clientes.
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate('/cadastros/cliente/nova')}
+                  >
+                    Novo Cliente
+                  </Button>
+                </Box>
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <TableContainer component={Paper} sx={{ mt: 3 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Nome</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell align="center">Cidade</TableCell>
+                        <TableCell align="center">Status</TableCell>
+                        <TableCell align="center">Ações</TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {clientes.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center">
+                            Nenhuma despesa encontrada no período selecionado
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        clientes.map((cliente) => (
+                          <TableRow key={cliente.id}>
+                            <TableCell>{cliente.nome} </TableCell>
+                            <TableCell>{cliente.email}</TableCell>
+                            <TableCell align="center">{cliente.cidade} - {cliente.estado}</TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={cliente.ativo ? 'ATIVO' : 'INATIVO'}
+                                color={getStatusColor(cliente.ativo)}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title="Editar">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => navigate(`/cadastros/cliente/editar/${cliente.id}`)}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Excluir">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDeleteCliente(cliente.id)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={2}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography>Gerenciamento de Produtos</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Aqui você pode cadastrar e gerenciar produtos e serviços.
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate('/cadastros/produto/nova')}
+                  >
+                    Novo Produto
+                  </Button>
+                </Box>
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <TableContainer component={Paper} sx={{ mt: 3 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell align="center">Código</TableCell>
+                        <TableCell align="center">Nome</TableCell>
+                        <TableCell align="center">Descrição</TableCell>
+                        <TableCell align="center">Preço</TableCell>
+                        <TableCell align="center">Estoque</TableCell>
+                        <TableCell align="center">Status</TableCell>
+                        <TableCell align="center">Ações</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {produtos.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} align="center">
+                            Nenhuma despesa encontrada no período selecionado
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        produtos.map((produto) => (
+                          <TableRow key={produto.id}>
+                            <TableCell align="center">{produto.codigo} </TableCell>
+                            <TableCell>{produto.nome} </TableCell>
+                            <TableCell>{produto.descricao}</TableCell>
+                            <TableCell align="right">R$ {produto.preco}</TableCell>
+                            <TableCell align="right">{produto.estoque}</TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={produto.ativo ? 'ATIVO' : 'INATIVO'}
+                                color={getStatusColor(produto.ativo)}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title="Editar">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => navigate(`/cadastros/produto/editar/${produto.id}`)}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Excluir">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDeleteProduto(produto.id)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </TabPanel>
           </Box>
-        </TabPanel>
-        </Box>
         )}
         {isAdminChefe() && (
           <Box>
             <TabPanel value={tabValue} index={0}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography>Gerenciamento de Empresas</Typography>
                   <Typography variant="body2" color="textSecondary">
@@ -503,10 +503,69 @@ const Cadastros = () => {
                   </Button>
                 </Box>
               </Box>
+              <Box sx={{ mt: 2 }}>
+                <TableContainer component={Paper} sx={{ mt: 3 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell align="center">Nome</TableCell>
+                        <TableCell align="center">Email</TableCell>
+                        <TableCell align="center">Cidade</TableCell>
+                        <TableCell align="center">Status</TableCell>
+                        <TableCell align="center">Ações</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {categorias.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center">
+                            Nenhuma empresa cadastrada
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        empresas.map((empresa) => (
+                          <TableRow key={empresa.id}>
+                            <TableCell>{empresa.nome}</TableCell>
+                            <TableCell>{empresa.email}</TableCell>
+                            <TableCell align="center">{empresa.cidade} - {empresa.estado}</TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={empresa.ativo ? 'ATIVO' : 'INATIVO'}
+                                color={getStatusColor(empresa.ativo)}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title="Editar">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => navigate(`/cadastros/empresa/editar/${empresa.id}`)}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Excluir">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDeleteCategoria(categoria.id)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Box>
                   <Typography>Gerenciamento de Categorias</Typography>
                   <Typography variant="body2" color="textSecondary">
@@ -528,8 +587,8 @@ const Cadastros = () => {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Nome</TableCell>
-                        <TableCell>Tipo</TableCell>
+                        <TableCell align="center">Nome</TableCell>
+                        <TableCell align="center">Tipo</TableCell>
                         <TableCell align="center">Cor</TableCell>
                         <TableCell align="center">Status</TableCell>
                         <TableCell align="center">Ações</TableCell>
