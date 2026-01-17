@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { login as apiLogin, getCurrentUser } from '../services/api';
 
@@ -15,9 +15,15 @@ export const useAuth = () => {
 // URL base para mídia
 const MEDIA_BASE_URL = 'http://localhost:8000';
 
+// Tempo de inatividade em milissegundos (5 minutos)
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const inactivityTimerRef = useRef(null);
+  const lastActivityRef = useRef(Date.now());
 
   // Função para construir URL completa da foto (com validação robusta)
   const getFullPhotoUrl = useCallback((photoPath) => {
@@ -39,6 +45,85 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
   }, []);
+
+  // Função para fazer logout por inatividade
+  const logoutByInactivity = useCallback(() => {
+    console.log('Sessão expirada por inatividade');
+    setSessionExpired(true);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+    setUser(null);
+  }, []);
+
+  // Reiniciar timer de inatividade
+  const resetInactivityTimer = useCallback(() => {
+    lastActivityRef.current = Date.now();
+
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+
+    // Só configura o timer se o usuário estiver logado
+    if (user) {
+      inactivityTimerRef.current = setTimeout(() => {
+        logoutByInactivity();
+      }, INACTIVITY_TIMEOUT);
+    }
+  }, [user, logoutByInactivity]);
+
+  // Configurar listeners de atividade do usuário
+  useEffect(() => {
+    if (!user) {
+      // Limpa timer se não houver usuário logado
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      return;
+    }
+
+    // Eventos que indicam atividade do usuário
+    const activityEvents = [
+      'mousedown',
+      'mousemove',
+      'keydown',
+      'scroll',
+      'touchstart',
+      'click',
+    ];
+
+    // Handler de atividade (com throttle para performance)
+    let throttleTimer = null;
+    const handleActivity = () => {
+      if (throttleTimer) return;
+
+      throttleTimer = setTimeout(() => {
+        throttleTimer = null;
+        resetInactivityTimer();
+      }, 1000); // Throttle de 1 segundo
+    };
+
+    // Adicionar listeners
+    activityEvents.forEach(event => {
+      document.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    // Iniciar timer
+    resetInactivityTimer();
+
+    // Cleanup
+    return () => {
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, handleActivity);
+      });
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      if (throttleTimer) {
+        clearTimeout(throttleTimer);
+      }
+    };
+  }, [user, resetInactivityTimer]);
 
   useEffect(() => {
     // Verifica se há usuário salvo no localStorage
@@ -93,6 +178,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(userData));
 
       setUser(userData);
+      setSessionExpired(false); // Limpa flag de sessão expirada
       return { success: true };
     } catch (error) {
       return {
@@ -102,12 +188,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     setUser(null);
-  };
+    setSessionExpired(false);
+  }, []);
+
+  // Limpar flag de sessão expirada (para usar após mostrar mensagem)
+  const clearSessionExpired = useCallback(() => {
+    setSessionExpired(false);
+  }, []);
 
   // Atualizar dados do usuário (busca do servidor e atualiza estado)
   const updateUser = async () => {
@@ -177,6 +272,9 @@ export const AuthProvider = ({ children }) => {
     isAdminEmpresa,
     isUsuarioEmpresa,
     isAuthenticated: !!user,
+    sessionExpired,
+    clearSessionExpired,
+    resetInactivityTimer,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

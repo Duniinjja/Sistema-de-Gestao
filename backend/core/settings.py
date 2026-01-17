@@ -139,10 +139,12 @@ REST_FRAMEWORK = {
 }
 
 # JWT Settings
+# ACCESS_TOKEN_LIFETIME: Tempo de vida do token de acesso (padrão: 5 minutos para segurança)
+# REFRESH_TOKEN_LIFETIME: Tempo de vida do refresh token (padrão: 1 dia)
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', default=60, cast=int)),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_LIFETIME', default=5, cast=int)),
     'REFRESH_TOKEN_LIFETIME': timedelta(minutes=config('JWT_REFRESH_TOKEN_LIFETIME', default=1440, cast=int)),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',

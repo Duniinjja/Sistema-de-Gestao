@@ -89,13 +89,25 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         Regras de segurança:
         - Usuário trocando própria senha: SEMPRE deve informar senha atual
         - Admin Chefe trocando senha de OUTRO usuário: não precisa da senha atual
+        - Admin Empresa trocando senha de usuário da MESMA empresa: não precisa da senha atual
         """
         usuario = self.get_object()
         is_admin_chefe = request.user.tipo_usuario == 'ADMIN_CHEFE'
+        is_admin_empresa = request.user.tipo_usuario == 'ADMIN_EMPRESA'
         is_own_password = request.user.id == usuario.id
 
-        # Verifica permissão - só pode trocar própria senha ou Admin Chefe pode trocar de outros
-        if not is_own_password and not is_admin_chefe:
+        # Verifica se Admin Empresa está editando usuário da mesma empresa
+        is_same_empresa = (
+            is_admin_empresa and
+            request.user.empresa_id and
+            usuario.empresa_id == request.user.empresa_id
+        )
+
+        # Verifica permissão - pode trocar senha se:
+        # 1. É a própria senha
+        # 2. É Admin Chefe
+        # 3. É Admin Empresa e o usuário é da mesma empresa
+        if not is_own_password and not is_admin_chefe and not is_same_empresa:
             return Response(
                 {'detail': 'Você não tem permissão para trocar a senha deste usuário.'},
                 status=status.HTTP_403_FORBIDDEN
@@ -119,7 +131,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
             )
 
         # SEGURANÇA: Se está trocando a PRÓPRIA senha, SEMPRE valida a senha atual
-        # Mesmo sendo Admin Chefe - para evitar que alguém use uma sessão aberta
+        # Mesmo sendo Admin - para evitar que alguém use uma sessão aberta
         if is_own_password:
             if not old_password:
                 return Response(
@@ -134,7 +146,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Admin Chefe trocando senha de OUTRO usuário não precisa da senha atual
+        # Admin trocando senha de OUTRO usuário não precisa da senha atual
         # (caso de reset de senha por um administrador)
 
         # Atualiza senha usando set_password (que faz hash automático)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -16,12 +16,13 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   Login as LoginIcon,
+  Timer as TimerIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, sessionExpired, clearSessionExpired } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -29,6 +30,16 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showSessionExpiredAlert, setShowSessionExpiredAlert] = useState(false);
+
+  // Mostrar alerta quando sessão expirar
+  useEffect(() => {
+    if (sessionExpired) {
+      setShowSessionExpiredAlert(true);
+      // Limpa a flag após mostrar
+      clearSessionExpired();
+    }
+  }, [sessionExpired, clearSessionExpired]);
 
   const handleChange = (e) => {
     setFormData({
@@ -241,6 +252,24 @@ const Login = () => {
               Entre com suas credenciais para acessar
             </Typography>
           </Box>
+
+          {/* Mensagem de sessão expirada */}
+          {showSessionExpiredAlert && (
+            <Alert
+              severity="warning"
+              icon={<TimerIcon />}
+              onClose={() => setShowSessionExpiredAlert(false)}
+              sx={{
+                mb: 3,
+                borderRadius: 2,
+                '& .MuiAlert-icon': {
+                  alignItems: 'center',
+                },
+              }}
+            >
+              Sua sessão expirou por inatividade. Por favor, faça login novamente.
+            </Alert>
+          )}
 
           {/* Mensagem de erro */}
           {error && (

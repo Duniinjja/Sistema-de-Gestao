@@ -8,9 +8,17 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
     Serializer customizado para login com JWT.
     Adiciona informações do usuário e empresa no token.
+    Bloqueia login de usuários inativos.
     """
     def validate(self, attrs):
         data = super().validate(attrs)
+
+        # Bloqueia login de usuários inativos
+        if not self.user.is_active:
+            from rest_framework import serializers
+            raise serializers.ValidationError(
+                {'detail': 'Sua conta está inativa. Entre em contato com o administrador.'}
+            )
 
         # Adiciona informações extras no response
         data['user'] = {
@@ -80,25 +88,60 @@ class UsuarioSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
 
-        # PROTEÇÃO: Campos críticos que NUNCA devem ser alterados via update normal
-        # tipo_usuario e empresa só podem ser alterados por Admin Chefe via endpoint específico
-        campos_protegidos = ['tipo_usuario', 'empresa', 'is_active', 'is_staff', 'is_superuser']
-
         # Verificar se o request está disponível no contexto
         request = self.context.get('request')
-        is_admin_chefe = request and request.user.tipo_usuario == 'ADMIN_CHEFE'
 
-        # Se não for admin chefe editando outro usuário, proteger campos críticos
-        is_editing_self = request and request.user.id == instance.id
+        if not request or not request.user:
+            # Sem contexto de request, apenas atualiza campos básicos
+            for attr, value in validated_data.items():
+                if attr not in ['empresa', 'is_staff', 'is_superuser', 'tipo_usuario', 'is_active']:
+                    setattr(instance, attr, value)
+            if password:
+                instance.set_password(password)
+            instance.save()
+            return instance
+
+        is_admin_chefe = request.user.tipo_usuario == 'ADMIN_CHEFE'
+        is_admin_empresa = request.user.tipo_usuario == 'ADMIN_EMPRESA'
+        is_editing_self = request.user.id == instance.id
+
+        # Verifica se Admin Empresa está editando usuário da mesma empresa
+        is_same_empresa = (
+            request.user.empresa_id and
+            instance.empresa_id == request.user.empresa_id
+        )
+
+        # Campos que SOMENTE Admin Chefe pode alterar
+        campos_admin_chefe_only = ['empresa', 'is_staff', 'is_superuser']
+
+        # Campos que Admin pode alterar (tipo_usuario e is_active)
+        campos_admin = ['tipo_usuario', 'is_active']
 
         for attr, value in validated_data.items():
-            # Se for campo protegido
-            if attr in campos_protegidos:
-                # Só permite se for Admin Chefe editando OUTRO usuário
-                if is_admin_chefe and not is_editing_self:
+            # Campos restritos apenas ao Admin Chefe
+            if attr in campos_admin_chefe_only:
+                if is_admin_chefe:
                     setattr(instance, attr, value)
-                # Se for o próprio usuário editando, ignora silenciosamente
                 continue
+
+            # Campos que admins podem alterar
+            if attr in campos_admin:
+                # Admin Chefe pode alterar qualquer usuário
+                if is_admin_chefe:
+                    # Admin Chefe pode alterar até a si mesmo (exceto is_active para não se desativar)
+                    if attr == 'is_active' and is_editing_self and value == False:
+                        continue  # Não permite auto-desativação
+                    setattr(instance, attr, value)
+                # Admin Empresa pode alterar usuários da mesma empresa
+                elif is_admin_empresa and is_same_empresa:
+                    # Não permite auto-desativação
+                    if attr == 'is_active' and is_editing_self and value == False:
+                        continue
+                    setattr(instance, attr, value)
+                continue
+
+            # Outros campos (email, first_name, last_name, telefone, foto)
+            # Qualquer usuário autenticado pode alterar esses campos básicos
             setattr(instance, attr, value)
 
         if password:
