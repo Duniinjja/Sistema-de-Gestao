@@ -198,6 +198,12 @@ export const getRelatorioFinanceiro = (params) =>
 export const getRelatorioConsolidado = (params) =>
   api.get('/relatorios/consolidado/', { params });
 
+export const getAnaliseReceita = (params) =>
+  api.get('/relatorios/analise-receita/', { params });
+
+export const getDRE = (params) =>
+  api.get('/relatorios/dre/', { params });
+
 // Categorias Globais (gerenciadas pelo Admin Chefe)
 export const getCategorias = (params) =>
   api.get('/categorias/', { params });

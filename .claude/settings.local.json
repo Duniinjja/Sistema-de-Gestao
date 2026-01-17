@@ -11,7 +11,11 @@
       "Bash(python manage.py:*)",
       "Bash(npm run build:*)",
       "Bash(npm run lint)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(./venv/Scripts/python.exe manage.py makemigrations:*)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(npx eslint:*)",
+      "Bash(node --check src/components/DRE.jsx)"
     ]
   }
 }

@@ -52,6 +52,8 @@ const VendaForm = () => {
     cliente: '',
     data_venda: new Date().toISOString().split('T')[0],
     desconto: '0',
+    chargeback: '0',
+    reversao_chargeback: '0',
     status: 'PENDENTE',
     forma_pagamento: 'DINHEIRO',
     observacoes: '',
@@ -108,6 +110,8 @@ const VendaForm = () => {
         cliente: venda.cliente || '',
         data_venda: venda.data_venda || '',
         desconto: venda.desconto || '0',
+        chargeback: venda.chargeback || '0',
+        reversao_chargeback: venda.reversao_chargeback || '0',
         status: venda.status || 'PENDENTE',
         forma_pagamento: venda.forma_pagamento || 'DINHEIRO',
         observacoes: venda.observacoes || '',
@@ -187,10 +191,15 @@ const VendaForm = () => {
   const calcularTotal = () => {
     const subtotal = itens.reduce((sum, item) => sum + item.subtotal, 0);
     const desconto = parseFloat(formData.desconto) || 0;
+    const chargeback = parseFloat(formData.chargeback) || 0;
+    const reversaoChargeback = parseFloat(formData.reversao_chargeback) || 0;
     return {
       subtotal,
       desconto,
+      chargeback,
+      reversaoChargeback,
       total: subtotal - desconto,
+      receitaLiquida: subtotal - desconto - chargeback + reversaoChargeback,
     };
   };
 
@@ -391,6 +400,50 @@ const VendaForm = () => {
                   />
                 </Grid>
 
+                {/* Chargeback */}
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Chargeback"
+                    name="chargeback"
+                    type="number"
+                    value={formData.chargeback}
+                    onChange={handleChange}
+                    helperText="Valor de estorno/contestacao"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">R$</InputAdornment>
+                      ),
+                    }}
+                    inputProps={{
+                      step: '0.01',
+                      min: '0',
+                    }}
+                  />
+                </Grid>
+
+                {/* Reversao Chargeback */}
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Reversao de Chargeback"
+                    name="reversao_chargeback"
+                    type="number"
+                    value={formData.reversao_chargeback}
+                    onChange={handleChange}
+                    helperText="Valor de chargeback recuperado"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">R$</InputAdornment>
+                      ),
+                    }}
+                    inputProps={{
+                      step: '0.01',
+                      min: '0',
+                    }}
+                  />
+                </Grid>
+
                 {/* Observações */}
                 <Grid item xs={12}>
                   <TextField
@@ -549,12 +602,25 @@ const VendaForm = () => {
                   <Typography variant="body1" sx={{ mb: 1 }}>
                     Subtotal: {formatCurrency(totais.subtotal)}
                   </Typography>
-                  <Typography variant="body1" sx={{ mb: 1 }}>
-                    Desconto: {formatCurrency(totais.desconto)}
+                  <Typography variant="body1" sx={{ mb: 1, color: 'warning.main' }}>
+                    (-) Desconto: {formatCurrency(totais.desconto)}
                   </Typography>
-                  <Typography variant="h6" color="primary">
+                  <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
                     Total: {formatCurrency(totais.total)}
                   </Typography>
+                  {(totais.chargeback > 0 || totais.reversaoChargeback > 0) && (
+                    <>
+                      <Typography variant="body2" sx={{ color: 'error.main' }}>
+                        (-) Chargeback: {formatCurrency(totais.chargeback)}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: 'success.main' }}>
+                        (+) Reversao CB: {formatCurrency(totais.reversaoChargeback)}
+                      </Typography>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'info.main', mt: 1 }}>
+                        Receita Liquida: {formatCurrency(totais.receitaLiquida)}
+                      </Typography>
+                    </>
+                  )}
                 </Box>
                   </Paper>
                 </Grow>

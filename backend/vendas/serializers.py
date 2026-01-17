@@ -29,6 +29,7 @@ class VendaSerializer(serializers.ModelSerializer):
     cliente_nome = serializers.CharField(source='cliente.nome', read_only=True)
     usuario_cadastro_nome = serializers.CharField(source='usuario_cadastro.get_full_name', read_only=True)
     valor_final = serializers.ReadOnlyField()
+    receita_liquida = serializers.ReadOnlyField()
     itens = ItemVendaSerializer(many=True, read_only=True)
 
     class Meta:
@@ -46,7 +47,7 @@ class VendaCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Venda
-        fields = ['empresa', 'cliente', 'data_venda', 'desconto', 'forma_pagamento', 'status', 'observacoes', 'itens']
+        fields = ['empresa', 'cliente', 'data_venda', 'desconto', 'chargeback', 'reversao_chargeback', 'forma_pagamento', 'status', 'observacoes', 'itens']
 
     def create(self, validated_data):
         itens_data = validated_data.pop('itens')

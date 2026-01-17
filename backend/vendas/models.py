@@ -138,6 +138,24 @@ class Venda(models.Model):
         verbose_name='Desconto'
     )
 
+    chargeback = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00'))],
+        verbose_name='Chargeback',
+        help_text='Valor de estorno/contestacao'
+    )
+
+    reversao_chargeback = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00'))],
+        verbose_name='Reversao de Chargeback',
+        help_text='Valor de chargeback recuperado'
+    )
+
     forma_pagamento = models.CharField(
         max_length=20,
         choices=FORMA_PAGAMENTO_CHOICES,
@@ -179,6 +197,11 @@ class Venda(models.Model):
     def valor_final(self):
         """Calcula o valor final com desconto"""
         return self.valor_total - self.desconto
+
+    @property
+    def receita_liquida(self):
+        """Calcula a receita operacional liquida (apos descontos e chargebacks)"""
+        return self.valor_total - self.desconto - self.chargeback + self.reversao_chargeback
 
 
 class ItemVenda(models.Model):
