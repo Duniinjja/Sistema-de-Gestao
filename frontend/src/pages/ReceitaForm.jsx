@@ -26,7 +26,7 @@ import {
   getReceita,
   createReceita,
   updateReceita,
-  getCategoriasReceita,
+  getCategoriasParaReceitas,
 } from '../services/api';
 
 const ReceitaForm = () => {
@@ -62,8 +62,7 @@ const ReceitaForm = () => {
 
   const loadCategorias = async () => {
     try {
-      const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
-      const response = await getCategoriasReceita(params);
+      const response = await getCategoriasParaReceitas();
       setCategorias(response.data.results || response.data);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);

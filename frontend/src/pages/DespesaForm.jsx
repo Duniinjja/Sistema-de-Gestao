@@ -26,7 +26,7 @@ import {
   getDespesa,
   createDespesa,
   updateDespesa,
-  getCategoriasDespesa,
+  getCategoriasParaDespesas,
 } from '../services/api';
 
 const DespesaForm = () => {
@@ -62,8 +62,7 @@ const DespesaForm = () => {
 
   const loadCategorias = async () => {
     try {
-      const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
-      const response = await getCategoriasDespesa(params);
+      const response = await getCategoriasParaDespesas();
       setCategorias(response.data.results || response.data);
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);

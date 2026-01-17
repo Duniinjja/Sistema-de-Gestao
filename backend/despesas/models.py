@@ -3,34 +3,6 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 
 
-class CategoriaDespesa(models.Model):
-    """
-    Categorias para classificar despesas.
-    Cada empresa pode ter suas próprias categorias.
-    """
-    empresa = models.ForeignKey(
-        'empresas.Empresa',
-        on_delete=models.CASCADE,
-        related_name='categorias_despesa',
-        verbose_name='Empresa'
-    )
-    nome = models.CharField(max_length=100, verbose_name='Nome')
-    descricao = models.TextField(blank=True, verbose_name='Descrição')
-    ativa = models.BooleanField(default=True, verbose_name='Ativa')
-
-    criado_em = models.DateTimeField(auto_now_add=True)
-    atualizado_em = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'Categoria de Despesa'
-        verbose_name_plural = 'Categorias de Despesas'
-        ordering = ['nome']
-        unique_together = ['empresa', 'nome']
-
-    def __str__(self):
-        return f"{self.nome} - {self.empresa.nome}"
-
-
 class Despesa(models.Model):
     """
     Model para registrar despesas da empresa.
@@ -61,7 +33,7 @@ class Despesa(models.Model):
     )
 
     categoria = models.ForeignKey(
-        CategoriaDespesa,
+        'categorias.Categoria',
         on_delete=models.PROTECT,
         related_name='despesas',
         verbose_name='Categoria'

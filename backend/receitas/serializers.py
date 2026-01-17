@@ -1,12 +1,5 @@
 from rest_framework import serializers
-from .models import CategoriaReceita, Receita
-
-
-class CategoriaReceitaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CategoriaReceita
-        fields = '__all__'
-        read_only_fields = ['criado_em', 'atualizado_em']
+from .models import Receita
 
 
 class ReceitaSerializer(serializers.ModelSerializer):

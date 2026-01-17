@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'vendas',
     'receitas',
     'relatorios',
+    'categorias',
 ]
 
 MIDDLEWARE = [

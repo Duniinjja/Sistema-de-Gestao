@@ -2,33 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Sum
 from django.utils import timezone
-from .models import CategoriaReceita, Receita
-
-
-@admin.register(CategoriaReceita)
-class CategoriaReceitaAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'empresa', 'total_receitas', 'ativa', 'criado_em']
-    list_filter = ['ativa', 'empresa', 'criado_em']
-    search_fields = ['nome', 'descricao']
-    list_per_page = 25
-
-    def total_receitas(self, obj):
-        """Mostra o total de receitas nesta categoria"""
-        total = obj.receitas.count()
-        return f"{total} receitas"
-    total_receitas.short_description = 'Total de Receitas'
-
-    actions = ['ativar_categorias', 'desativar_categorias']
-
-    def ativar_categorias(self, request, queryset):
-        updated = queryset.update(ativa=True)
-        self.message_user(request, f'{updated} categoria(s) ativada(s) com sucesso.')
-    ativar_categorias.short_description = 'Ativar categorias selecionadas'
-
-    def desativar_categorias(self, request, queryset):
-        updated = queryset.update(ativa=False)
-        self.message_user(request, f'{updated} categoria(s) desativada(s) com sucesso.')
-    desativar_categorias.short_description = 'Desativar categorias selecionadas'
+from .models import Receita
 
 
 @admin.register(Receita)
