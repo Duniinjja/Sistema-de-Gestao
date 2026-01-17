@@ -35,6 +35,7 @@ const CadastroEmpresaForm = () => {
 
   const [formData, setFormData] = useState({
     nome: '',
+    razao_social: '',
     cnpj: '',
     email: '',
     telefone: '',
@@ -63,6 +64,7 @@ const CadastroEmpresaForm = () => {
       const empresa = response.data;
       setFormData({
         nome: empresa.nome || '',
+        razao_social: empresa.razao_social || "",
         cnpj: empresa.cnpj || '',
         email: empresa.email || '',
         telefone: empresa.telefone || '',
@@ -95,6 +97,8 @@ const CadastroEmpresaForm = () => {
       toast.error('Nome da empresa é obrigatório');
       return;
     }
+
+    console.log(formData)
 
     try {
       setLoading(true);
@@ -196,6 +200,19 @@ const CadastroEmpresaForm = () => {
                     value={formData.cnpj}
                     onChange={handleChange}
                     placeholder="00.000.000/0000-00"
+                  />
+                </Grid>
+
+                {/* Razao Social */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Razao Social"
+                    name="razao_social"
+                    value={formData.razao_social}
+                    onChange={handleChange}
+                    required
+                    placeholder="Ex: Empresa ABC Ltda"
                   />
                 </Grid>
 
