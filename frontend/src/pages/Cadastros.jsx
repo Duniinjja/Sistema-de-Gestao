@@ -28,11 +28,10 @@ import {
 } from '@mui/icons-material';
 
 import {
-  createUsuario,
-  updateUsuario,
-  changePassword,
   deleteUsuario,
-  getUsuarios
+  getUsuarios,
+  getClientes,
+  deleteCliente,
   
 } from '../services/api';
 
@@ -52,14 +51,15 @@ const Cadastros = () => {
   const { isAdminChefe } = useAuth();
 
   const [usuarios, setUsuarios] = useState([]);
+  const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Tem certeza que deseja excluir esta despesa?')) {
+  const handleDeleteUsuario = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir este usuário?')) {
       return;
     }
 
@@ -71,6 +71,22 @@ const Cadastros = () => {
     }
     finally {
       loadUsuarios();
+    }
+  };
+
+    const handleDeleteCliente = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir este cliente?')) {
+      return;
+    }
+
+    try {
+      await deleteCliente(id);
+      toast.success('Cliente excluído com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir cliente');
+    }
+    finally {
+      loadClientes();
     }
   };
 
@@ -94,6 +110,26 @@ const Cadastros = () => {
     }
   }
 
+  const loadClientes = async () => {
+    try {
+      setLoading(true);
+      const response = await getClientes();
+      let data = response.data.results || response.data;
+
+      // Garantir que data é um array
+      if (!Array.isArray(data)) {
+        data = [];
+      }
+
+      await setClientes(data);
+
+    } catch (error) {
+      toast.error('Erro ao carregar clientes');
+    } finally {
+      setLoading(false);
+    }
+  }
+
     const getStatusColor = (status) => {
     const colors = {
       true: 'success',
@@ -104,6 +140,7 @@ const Cadastros = () => {
 
   useEffect(() => {
   loadUsuarios()
+  loadClientes()
   }, []);
 
   return (
@@ -187,7 +224,7 @@ const Cadastros = () => {
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleDelete(usuario.id)}
+                        onClick={() => handleDeleteUsuario(usuario.id)}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -219,7 +256,66 @@ const Cadastros = () => {
                 >
                 Novo Cliente
               </Button>
+            </Box>
           </Box>
+          <Box sx={{ mt: 2 }}>
+            <TableContainer component={Paper} sx={{ mt: 3 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Nome</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell align="center">Cidade</TableCell>
+                    <TableCell align="center">Status</TableCell>
+                    <TableCell align="center">Ações</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {clientes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        Nenhuma despesa encontrada no período selecionado
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    clientes.map((cliente) => (
+                      <TableRow key={cliente.id}>
+                        <TableCell>{cliente.nome} </TableCell>
+                        <TableCell>{cliente.email}</TableCell>
+                        <TableCell align="center">{cliente.cidade} - {cliente.estado}</TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={cliente.ativo ? 'ATIVO' : 'INATIVO'}
+                            color={getStatusColor(cliente.ativo)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Tooltip title="Editar">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => navigate(`/cadastros/cliente/editar/${cliente.id}`)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Excluir">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteCliente(cliente.id)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
         </TabPanel>
 

@@ -148,8 +148,19 @@ export const updateVenda = (id, data) =>
 export const deleteVenda = (id) =>
   api.delete(`/vendas/${id}/`);
 
+export const createCliente = (data) =>
+  api.post('/vendas/clientes/', data);
+
 export const getClientes = (params) =>
   api.get('/vendas/clientes/', { params });
+export const getCliente = (id) =>
+  api.get(`/vendas/clientes/${id}/`);
+
+export const updateCliente = (id, data) =>
+    api.put(`/vendas/clientes/${id}/`, data);
+
+export const deleteCliente = (id) =>
+    api.delete(`/vendas/clientes/${id}/`);
 
 export const getProdutos = (params) =>
   api.get('/vendas/produtos/', { params });
