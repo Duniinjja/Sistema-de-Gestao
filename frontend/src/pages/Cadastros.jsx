@@ -32,11 +32,13 @@ import {
   getUsuarios,
   getClientes,
   deleteCliente,
+  getProdutos,
+  deleteProduto,
   getCategorias,
   deleteCategoria,
+  getEmpresas,
+  deleteEmpresa,  
 } from '../services/api';
-
-//teste
 
 const TabPanel = ({ children, value, index }) => {
   return (
@@ -53,7 +55,9 @@ const Cadastros = () => {
 
   const [usuarios, setUsuarios] = useState([]);
   const [clientes, setClientes] = useState([]);
+  const [produtos, setProdutos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const handleTabChange = (event, newValue) => {
@@ -92,7 +96,23 @@ const Cadastros = () => {
     }
   };
 
-  const handleDeleteCategoria = async (id) => {
+  const handleDeleteProduto = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir este produto?')) {
+      return;
+    }
+
+    try {
+      await deleteProduto(id);
+      toast.success('Produto excluído com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir produto');
+    }
+    finally {
+      loadProdutos();
+    }
+  };
+
+  const handleDeleteCategorias = async (id) => {
     if (!window.confirm('Tem certeza que deseja excluir esta categoria?')) {
       return;
     }
@@ -100,13 +120,27 @@ const Cadastros = () => {
     try {
       await deleteCategoria(id);
       toast.success('Categoria excluída com sucesso!');
-      loadCategorias();
     } catch (error) {
-      if (error.response?.status === 500) {
-        toast.error('Não é possível excluir: categoria em uso');
-      } else {
-        toast.error('Erro ao excluir categoria');
-      }
+      toast.error('Erro ao excluir categoria');
+    }
+    finally {
+      loadCategorias();
+    }
+  };
+
+  const handleDeleteEmpresas = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta empresa?')) {
+      return;
+    }
+
+    try {
+      await deleteEmpresa(id);
+      toast.success('Empresa excluída com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir empresa');
+    }
+    finally {
+      loadEmpresas();
     }
   };
 
@@ -150,25 +184,67 @@ const Cadastros = () => {
     }
   };
 
-  const loadCategorias = async () => {
+  const loadProdutos = async () => {
     try {
       setLoading(true);
-      const response = await getCategorias();
+      const response = await getProdutos();
       let data = response.data.results || response.data;
 
+      // Garantir que data é um array
       if (!Array.isArray(data)) {
         data = [];
       }
 
-      setCategorias(data);
+      await setProdutos(data);
+
+    } catch (error) {
+      toast.error('Erro ao carregar produtos');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const loadCategorias = async () => {
+    try {
+      setLoading(true);
+      const response = await getCategorias({});
+      let data = response.data.results || response.data;
+
+      // Garantir que data é um array
+      if (!Array.isArray(data)) {
+        data = [];
+      }
+
+      await setCategorias(data);
+
     } catch (error) {
       toast.error('Erro ao carregar categorias');
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-    const getStatusColor = (status) => {
+  const loadEmpresas = async () => {
+    try {
+      setLoading(true);
+      const response = await getEmpresas();
+      let data = response.data.results || response.data;
+
+      // Garantir que data é um array
+      if (!Array.isArray(data)) {
+        data = [];
+      }
+
+      await setEmpresas(data);
+
+    } catch (error) {
+      toast.error('Erro ao carregar empresas');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const getStatusColor = (status) => {
     const colors = {
       true: 'success',
       false: 'error',
@@ -177,12 +253,11 @@ const Cadastros = () => {
   };
 
   useEffect(() => {
-    if (isAdminChefe()) {
-      loadCategorias();
-    } else {
-      loadUsuarios();
-      loadClientes();
-    }
+  loadUsuarios()
+  loadClientes()
+  loadProdutos()
+  loadCategorias()
+  loadEmpresas()
   }, []);
 
   return (
