@@ -1,66 +1,148 @@
 @echo off
+title Setup - Sistema de Gestao
+color 0A
+
 echo ========================================
-echo Sistema de Gestao Multiempresas
-echo Setup Automatico - Windows
+echo    SISTEMA DE GESTAO MULTIEMPRESAS
+echo         Setup Automatico
 echo ========================================
 echo.
 
+:: Verifica se Python esta instalado
+python --version > nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERRO] Python nao encontrado!
+    echo Por favor, instale o Python 3.11+ primeiro.
+    echo https://www.python.org/downloads/
+    pause
+    exit /b 1
+)
+
+:: Verifica se Node.js esta instalado
+node --version > nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERRO] Node.js nao encontrado!
+    echo Por favor, instale o Node.js 18+ primeiro.
+    echo https://nodejs.org/
+    pause
+    exit /b 1
+)
+
+echo [OK] Python encontrado
+echo [OK] Node.js encontrado
+echo.
+
+echo ========================================
 echo [1/5] Configurando Backend...
-cd backend
+echo ========================================
+echo.
 
-echo Criando ambiente virtual Python...
-python -m venv venv
+cd /d %~dp0backend
 
-echo Ativando ambiente virtual...
+if not exist venv (
+    echo [INFO] Criando ambiente virtual Python...
+    python -m venv venv
+) else (
+    echo [INFO] Ambiente virtual ja existe.
+)
+
+echo [INFO] Ativando ambiente virtual...
 call venv\Scripts\activate
 
-echo Instalando dependencias...
-pip install -r requirements.txt
+echo [INFO] Instalando dependencias Python...
+pip install -r requirements.txt --quiet
 
-echo Criando arquivo .env...
 if not exist .env (
-    copy .env.example .env
-    echo IMPORTANTE: Edite o arquivo backend\.env com suas configuracoes!
+    echo.
+    echo [INFO] Criando arquivo .env...
+    copy .env.example .env > nul
+    echo.
+    echo ========================================
+    echo    IMPORTANTE!
+    echo ========================================
+    echo Edite o arquivo backend\.env com suas
+    echo configuracoes de banco de dados antes
+    echo de continuar.
+    echo ========================================
+    echo.
     pause
 )
 
 echo.
-echo [2/5] Aplicando migracoes do banco de dados...
-python manage.py makemigrations
-python manage.py migrate
+echo ========================================
+echo [2/5] Configurando Banco de Dados...
+echo ========================================
+echo.
+
+echo [INFO] Criando migrations...
+python manage.py makemigrations --verbosity=0
+
+echo [INFO] Aplicando migrations...
+python manage.py migrate --verbosity=0
+
+echo [OK] Banco de dados configurado!
 
 echo.
-echo [3/5] Criando superusuario...
-echo Digite as informacoes do Admin Chefe:
-python manage.py createsuperuser
+echo ========================================
+echo [3/5] Criar Admin Chefe?
+echo ========================================
+echo.
+echo Deseja criar um superusuario agora? (S/N)
+choice /c SN /n
+if errorlevel 2 goto :frontend
+if errorlevel 1 (
+    echo.
+    python manage.py createsuperuser
+)
 
-cd..
+:frontend
+cd /d %~dp0
 
 echo.
+echo ========================================
 echo [4/5] Configurando Frontend...
+echo ========================================
+echo.
+
 cd frontend
 
-echo Instalando dependencias do Node.js...
-call npm install
+if not exist node_modules (
+    echo [INFO] Instalando dependencias Node.js...
+    call npm install
+) else (
+    echo [INFO] Dependencias ja instaladas.
+)
 
-cd..
+cd /d %~dp0
 
 echo.
 echo ========================================
-echo Setup Concluido!
+echo [5/5] Setup Concluido!
 echo ========================================
 echo.
-echo Para iniciar o sistema:
+echo Para iniciar o sistema, execute:
 echo.
-echo Backend:
-echo   cd backend
-echo   venv\Scripts\activate
-echo   python manage.py runserver
+echo   start.bat     - Inicia Backend e Frontend
 echo.
-echo Frontend:
-echo   cd frontend
-echo   npm run dev
+echo Ou separadamente:
+echo   start-backend.bat   - Apenas Backend
+echo   start-frontend.bat  - Apenas Frontend
 echo.
-echo Acesse: http://localhost:3000
+echo ----------------------------------------
 echo.
+echo Backend:  http://localhost:8000
+echo Frontend: http://localhost:3000
+echo Admin:    http://localhost:8000/admin
+echo.
+echo ========================================
+echo.
+
+echo Deseja iniciar o sistema agora? (S/N)
+choice /c SN /n
+if errorlevel 2 goto :end
+if errorlevel 1 (
+    call start.bat
+)
+
+:end
 pause

@@ -1,84 +1,85 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import {
   Box,
   Paper,
   Typography,
   TextField,
   Button,
-  Grid,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
+  FormControlLabel,
+  Switch,
   CircularProgress,
-  InputAdornment,
+  Grid,
+  Grow,
+  Fade,
 } from '@mui/material';
 import {
   Save as SaveIcon,
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
-import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import {
-  getDespesa,
-  createDespesa,
-  updateDespesa,
-  getCategoriasDespesa,
+  getCategoria,
+  createCategoria,
+  updateCategoria,
 } from '../services/api';
 
-const DespesaForm = () => {
+const CadastroCategoriaForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { user } = useAuth();
+  const { isAdminChefe } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [categorias, setCategorias] = useState([]);
+  const [mounted, setMounted] = useState(false);
+
   const [formData, setFormData] = useState({
+    nome: '',
     descricao: '',
-    categoria: '',
-    valor: '',
-    data_vencimento: '',
-    data_pagamento: '',
-    status: 'PENDENTE',
-    forma_pagamento: 'DINHEIRO',
-    observacoes: '',
+    tipo: 'DESPESA',
+    ativa: true,
+    cor: '#1976d2',
+    icone: '',
+    ordem: 0,
   });
 
   useEffect(() => {
-    loadCategorias();
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Verificar se é Admin Chefe
+    if (!isAdminChefe()) {
+      toast.error('Acesso negado. Apenas Admin Chefe pode gerenciar categorias.');
+      navigate('/cadastros');
+      return;
+    }
+
     if (id) {
-      loadDespesa();
+      loadCategoria();
     }
   }, [id]);
 
-  const loadCategorias = async () => {
-    try {
-      const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
-      const response = await getCategoriasDespesa(params);
-      setCategorias(response.data.results || response.data);
-    } catch (error) {
-      console.error('Erro ao carregar categorias:', error);
-      toast.error('Erro ao carregar categorias: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const loadDespesa = async () => {
+  const loadCategoria = async () => {
     try {
       setLoading(true);
-      const response = await getDespesa(id);
-      const despesa = response.data;
+      const response = await getCategoria(id);
+      const categoria = response.data;
       setFormData({
-        descricao: despesa.descricao || '',
-        categoria: despesa.categoria || '',
-        valor: despesa.valor || '',
-        data_vencimento: despesa.data_vencimento || '',
-        data_pagamento: despesa.data_pagamento || '',
-        status: despesa.status || 'PENDENTE',
-        forma_pagamento: despesa.forma_pagamento || 'DINHEIRO',
-        observacoes: despesa.observacoes || '',
+        nome: categoria.nome || '',
+        descricao: categoria.descricao || '',
+        tipo: categoria.tipo || 'AMBOS',
+        ativa: categoria.ativa !== undefined ? categoria.ativa : true,
+        cor: categoria.cor || '#1976d2',
+        icone: categoria.icone || '',
+        ordem: categoria.ordem || 0,
       });
     } catch (error) {
-      toast.error('Erro ao carregar despesa');
+      toast.error('Erro ao carregar categoria');
       console.error(error);
     } finally {
       setLoading(false);
@@ -86,10 +87,10 @@ const DespesaForm = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, checked, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -97,56 +98,44 @@ const DespesaForm = () => {
     e.preventDefault();
 
     // Validações
-    if (!formData.descricao.trim()) {
-      toast.error('Descrição é obrigatória');
+    if (!formData.nome || !formData.nome.trim()) {
+      toast.error('Nome é obrigatório');
       return;
     }
-    if (!formData.categoria) {
-      toast.error('Categoria é obrigatória');
-      return;
-    }
-    if (!formData.valor || parseFloat(formData.valor) <= 0) {
-      toast.error('Valor deve ser maior que zero');
-      return;
-    }
-    if (!formData.data_vencimento) {
-      toast.error('Data de vencimento é obrigatória');
+
+    if (!formData.tipo) {
+      toast.error('Tipo é obrigatório');
       return;
     }
 
     try {
       setLoading(true);
 
-      // Validar dados do usuário
-      if (!user?.empresa_id) {
-        toast.error('Usuário sem empresa vinculada');
-        return;
-      }
-
       const data = {
-        ...formData,
-        empresa: user.empresa_id,
-        usuario_cadastro: user.id,
+        nome: formData.nome.trim(),
+        descricao: formData.descricao.trim(),
+        tipo: formData.tipo,
+        ativa: formData.ativa,
+        cor: formData.cor,
+        icone: formData.icone.trim(),
+        ordem: parseInt(formData.ordem) || 0,
       };
 
-      console.log('Dados enviados:', data);
-
       if (id) {
-        await updateDespesa(id, data);
-        toast.success('Despesa atualizada com sucesso!');
+        await updateCategoria(id, data);
+        toast.success('Categoria atualizada com sucesso!');
       } else {
-        await createDespesa(data);
-        toast.success('Despesa cadastrada com sucesso!');
+        await createCategoria(data);
+        toast.success('Categoria cadastrada com sucesso!');
       }
-      navigate('/despesas');
+      navigate('/cadastros');
     } catch (error) {
-      console.error('Erro ao salvar despesa:', error);
-      const errorMessage = error.response?.data?.message
+      console.error('Erro ao salvar categoria:', error);
+      const errorMessage = error.response?.data?.nome?.[0]
         || error.response?.data?.detail
         || error.response?.data?.error
-        || Object.values(error.response?.data || {}).flat().join(', ')
-        || error.message;
-      toast.error('Erro ao salvar despesa: ' + errorMessage);
+        || 'Erro ao salvar categoria';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -161,186 +150,182 @@ const DespesaForm = () => {
   }
 
   return (
-    <Box>
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/cadastros')}
-          variant="outlined"
-        >
-          Voltar
-        </Button>
-        <Typography variant="h4">
-          {id ? 'Editar Categoria' : 'Nova Categoria'}
-        </Typography>
-      </Box>
+    <Fade in={mounted} timeout={300}>
+      <Box>
+        <Grow in={mounted} timeout={400}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate('/cadastros')}
+              sx={{ mr: 2 }}
+            >
+              Voltar
+            </Button>
+            <Typography variant="h4">
+              {id ? 'Editar Categoria' : 'Nova Categoria'}
+            </Typography>
+          </Box>
+        </Grow>
 
-      <Paper sx={{ p: 3 }}>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
-            {/* Descrição */}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Descrição"
-                name="descricao"
-                value={formData.descricao}
-                onChange={handleChange}
-                required
-                placeholder="Ex: Energia Janeiro 2026"
-              />
-            </Grid>
+        <Grow in={mounted} timeout={500}>
+          <Paper sx={{ p: 3 }}>
+            <Box component="form" onSubmit={handleSubmit}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Nome"
+                    name="nome"
+                    value={formData.nome}
+                    onChange={handleChange}
+                    required
+                    placeholder="Ex: Alimentação, Transporte, Salários..."
+                  />
+                </Grid>
 
-            {/* Categoria */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Categoria</InputLabel>
-                <Select
-                  name="categoria"
-                  value={formData.categoria}
-                  onChange={handleChange}
-                  label="Categoria"
-                >
-                  {categorias.map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
-                      {cat.nome}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Tipo de Categoria</InputLabel>
+                    <Select
+                      name="tipo"
+                      value={formData.tipo}
+                      onChange={handleChange}
+                      label="Tipo de Categoria"
+                    >
+                      <MenuItem value="DESPESA">Categoria de Despesa</MenuItem>
+                      <MenuItem value="RECEITA">Categoria de Receita</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
 
-            {/* Valor */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Valor"
-                name="valor"
-                type="number"
-                value={formData.valor}
-                onChange={handleChange}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">R$</InputAdornment>
-                  ),
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Descrição"
+                    name="descricao"
+                    value={formData.descricao}
+                    onChange={handleChange}
+                    multiline
+                    rows={3}
+                    placeholder="Descrição opcional da categoria..."
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Cor"
+                    name="cor"
+                    type="color"
+                    value={formData.cor}
+                    onChange={handleChange}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{
+                      '& input': {
+                        height: 50,
+                        cursor: 'pointer',
+                      },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Ícone (Material Icons)"
+                    name="icone"
+                    value={formData.icone}
+                    onChange={handleChange}
+                    placeholder="Ex: shopping_cart, home, work..."
+                    helperText="Nome do ícone do Material Icons"
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={4}>
+                  <TextField
+                    fullWidth
+                    label="Ordem de Exibição"
+                    name="ordem"
+                    type="number"
+                    value={formData.ordem}
+                    onChange={handleChange}
+                    InputProps={{ inputProps: { min: 0 } }}
+                    helperText="Menor número aparece primeiro"
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.ativa}
+                        onChange={handleChange}
+                        name="ativa"
+                        color="primary"
+                      />
+                    }
+                    label="Categoria Ativa"
+                  />
+                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', ml: 6 }}>
+                    Categorias inativas não aparecem nos selects de despesas e receitas
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                    <Button
+                      variant="outlined"
+                      onClick={() => navigate('/cadastros')}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      startIcon={<SaveIcon />}
+                      disabled={loading}
+                    >
+                      {loading ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
+          </Paper>
+        </Grow>
+
+        {/* Preview da categoria */}
+        <Grow in={mounted} timeout={600}>
+          <Paper sx={{ p: 3, mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Preview
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+              <Box
+                sx={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  backgroundColor: formData.cor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-                inputProps={{
-                  step: '0.01',
-                  min: '0',
-                }}
               />
-            </Grid>
-
-            {/* Data Vencimento */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Data de Vencimento"
-                name="data_vencimento"
-                type="date"
-                value={formData.data_vencimento}
-                onChange={handleChange}
-                required
-                InputLabelProps={{
-                  shrink: true,
-                }}
-              />
-            </Grid>
-
-            {/* Data Pagamento */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Data de Pagamento"
-                name="data_pagamento"
-                type="date"
-                value={formData.data_pagamento}
-                onChange={handleChange}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                helperText="Deixe em branco se ainda não foi pago"
-              />
-            </Grid>
-
-            {/* Status */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  label="Status"
-                >
-                  <MenuItem value="PENDENTE">Pendente</MenuItem>
-                  <MenuItem value="PAGA">Paga</MenuItem>
-                  <MenuItem value="VENCIDA">Vencida</MenuItem>
-                  <MenuItem value="CANCELADA">Cancelada</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Forma de Pagamento */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Forma de Pagamento</InputLabel>
-                <Select
-                  name="forma_pagamento"
-                  value={formData.forma_pagamento}
-                  onChange={handleChange}
-                  label="Forma de Pagamento"
-                >
-                  <MenuItem value="DINHEIRO">Dinheiro</MenuItem>
-                  <MenuItem value="PIX">PIX</MenuItem>
-                  <MenuItem value="CARTAO_CREDITO">Cartão de Crédito</MenuItem>
-                  <MenuItem value="CARTAO_DEBITO">Cartão de Débito</MenuItem>
-                  <MenuItem value="BOLETO">Boleto</MenuItem>
-                  <MenuItem value="TRANSFERENCIA">Transferência</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Observações */}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Observações"
-                name="observacoes"
-                value={formData.observacoes}
-                onChange={handleChange}
-                multiline
-                rows={3}
-                placeholder="Informações adicionais sobre a despesa"
-              />
-            </Grid>
-
-            {/* Botões */}
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/despesas')}
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
-                  disabled={loading}
-                >
-                  {loading ? 'Salvando...' : 'Salvar'}
-                </Button>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {formData.nome || 'Nome da Categoria'}
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {formData.tipo === 'DESPESA' ? 'Categoria de Despesa' : 'Categoria de Receita'}
+                </Typography>
               </Box>
-            </Grid>
-          </Grid>
-        </form>
-      </Paper>
-    </Box>
+            </Box>
+          </Paper>
+        </Grow>
+      </Box>
+    </Fade>
   );
 };
 
-export default DespesaForm;
+export default CadastroCategoriaForm;

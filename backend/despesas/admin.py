@@ -1,34 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.db.models import Sum, Count
+from django.db.models import Sum
 from django.utils import timezone
-from .models import CategoriaDespesa, Despesa
-
-
-@admin.register(CategoriaDespesa)
-class CategoriaDespesaAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'empresa', 'total_despesas', 'ativa', 'criado_em']
-    list_filter = ['ativa', 'empresa', 'criado_em']
-    search_fields = ['nome', 'descricao']
-    list_per_page = 25
-
-    def total_despesas(self, obj):
-        """Mostra o total de despesas nesta categoria"""
-        total = obj.despesas.count()
-        return f"{total} despesas"
-    total_despesas.short_description = 'Total de Despesas'
-
-    actions = ['ativar_categorias', 'desativar_categorias']
-
-    def ativar_categorias(self, request, queryset):
-        updated = queryset.update(ativa=True)
-        self.message_user(request, f'{updated} categoria(s) ativada(s) com sucesso.')
-    ativar_categorias.short_description = 'Ativar categorias selecionadas'
-
-    def desativar_categorias(self, request, queryset):
-        updated = queryset.update(ativa=False)
-        self.message_user(request, f'{updated} categoria(s) desativada(s) com sucesso.')
-    desativar_categorias.short_description = 'Desativar categorias selecionadas'
+from .models import Despesa
 
 
 @admin.register(Despesa)

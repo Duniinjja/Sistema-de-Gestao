@@ -3,33 +3,6 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 
 
-class CategoriaReceita(models.Model):
-    """
-    Categorias para classificar receitas.
-    """
-    empresa = models.ForeignKey(
-        'empresas.Empresa',
-        on_delete=models.CASCADE,
-        related_name='categorias_receita',
-        verbose_name='Empresa'
-    )
-    nome = models.CharField(max_length=100, verbose_name='Nome')
-    descricao = models.TextField(blank=True, verbose_name='Descrição')
-    ativa = models.BooleanField(default=True, verbose_name='Ativa')
-
-    criado_em = models.DateTimeField(auto_now_add=True)
-    atualizado_em = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'Categoria de Receita'
-        verbose_name_plural = 'Categorias de Receitas'
-        ordering = ['nome']
-        unique_together = ['empresa', 'nome']
-
-    def __str__(self):
-        return f"{self.nome} - {self.empresa.nome}"
-
-
 class Receita(models.Model):
     """
     Model para registrar receitas/entradas financeiras da empresa.
@@ -59,7 +32,7 @@ class Receita(models.Model):
     )
 
     categoria = models.ForeignKey(
-        CategoriaReceita,
+        'categorias.Categoria',
         on_delete=models.PROTECT,
         related_name='receitas',
         verbose_name='Categoria'

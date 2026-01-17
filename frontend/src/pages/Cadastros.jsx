@@ -32,7 +32,8 @@ import {
   getUsuarios,
   getClientes,
   deleteCliente,
-  
+  getCategorias,
+  deleteCategoria,
 } from '../services/api';
 
 //teste
@@ -52,6 +53,7 @@ const Cadastros = () => {
 
   const [usuarios, setUsuarios] = useState([]);
   const [clientes, setClientes] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const handleTabChange = (event, newValue) => {
@@ -74,7 +76,7 @@ const Cadastros = () => {
     }
   };
 
-    const handleDeleteCliente = async (id) => {
+  const handleDeleteCliente = async (id) => {
     if (!window.confirm('Tem certeza que deseja excluir este cliente?')) {
       return;
     }
@@ -87,6 +89,24 @@ const Cadastros = () => {
     }
     finally {
       loadClientes();
+    }
+  };
+
+  const handleDeleteCategoria = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta categoria?')) {
+      return;
+    }
+
+    try {
+      await deleteCategoria(id);
+      toast.success('Categoria excluída com sucesso!');
+      loadCategorias();
+    } catch (error) {
+      if (error.response?.status === 500) {
+        toast.error('Não é possível excluir: categoria em uso');
+      } else {
+        toast.error('Erro ao excluir categoria');
+      }
     }
   };
 
@@ -128,7 +148,25 @@ const Cadastros = () => {
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const loadCategorias = async () => {
+    try {
+      setLoading(true);
+      const response = await getCategorias();
+      let data = response.data.results || response.data;
+
+      if (!Array.isArray(data)) {
+        data = [];
+      }
+
+      setCategorias(data);
+    } catch (error) {
+      toast.error('Erro ao carregar categorias');
+    } finally {
+      setLoading(false);
+    }
+  };
 
     const getStatusColor = (status) => {
     const colors = {
@@ -139,8 +177,12 @@ const Cadastros = () => {
   };
 
   useEffect(() => {
-  loadUsuarios()
-  loadClientes()
+    if (isAdminChefe()) {
+      loadCategorias();
+    } else {
+      loadUsuarios();
+      loadClientes();
+    }
   }, []);
 
   return (
@@ -154,8 +196,8 @@ const Cadastros = () => {
           {!isAdminChefe() && (<Tab label="Usuários" />)}
           {!isAdminChefe() && (<Tab label="Clientes" />)}
           {!isAdminChefe() && (<Tab label="Produtos" />)}
-          {!isAdminChefe() && (<Tab label="Categorias" />)}       
           {isAdminChefe() && (<Tab label="Empresas" />)}
+          {isAdminChefe() && (<Tab label="Categorias" />)}
         </Tabs>
 
   {!isAdminChefe() && (
@@ -338,49 +380,126 @@ const Cadastros = () => {
             </Box>
           </Box>
         </TabPanel>
-
-        <TabPanel value={tabValue} index={3}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-            <Box>
-          <Typography>Gerenciamento de Categorias</Typography>
-          <Typography variant="body2" color="textSecondary">
-            Aqui você pode cadastrar categorias de despesas e receitas.
-          </Typography>
-          </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => navigate('/cadastros/categoria/nova')}
-                >
-                Nova Categoria
-              </Button>
-            </Box>
-          </Box>
-        </TabPanel>
         </Box>
         )}
         {isAdminChefe() && (
-
-          <TabPanel value={tabValue} index={0}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-              <Box>
-            <Typography>Gerenciamento de Empresas</Typography>
-            <Typography variant="body2" color="textSecondary">
-              Aqui você pode cadastrar empresas.
-            </Typography>
-            </Box>
+          <Box>
+            <TabPanel value={tabValue} index={0}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => navigate('/cadastros/empresa/nova')}
+                <Box>
+                  <Typography>Gerenciamento de Empresas</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Aqui você pode cadastrar empresas.
+                  </Typography>
+                </Box>
+                <Box>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate('/cadastros/empresa/nova')}
                   >
-                  Nova Empresa
-                </Button>
+                    Nova Empresa
+                  </Button>
+                </Box>
               </Box>
-            </Box>
-          </TabPanel>
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={1}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
+                <Box>
+                  <Typography>Gerenciamento de Categorias</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Gerencie as categorias globais de despesas e receitas para todos os usuários.
+                  </Typography>
+                </Box>
+                <Box>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    onClick={() => navigate('/cadastros/categoria/nova')}
+                  >
+                    Nova Categoria
+                  </Button>
+                </Box>
+              </Box>
+              <Box sx={{ mt: 2 }}>
+                <TableContainer component={Paper} sx={{ mt: 3 }}>
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Nome</TableCell>
+                        <TableCell>Tipo</TableCell>
+                        <TableCell align="center">Cor</TableCell>
+                        <TableCell align="center">Status</TableCell>
+                        <TableCell align="center">Ações</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {categorias.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center">
+                            Nenhuma categoria cadastrada
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        categorias.map((categoria) => (
+                          <TableRow key={categoria.id}>
+                            <TableCell>{categoria.nome}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={categoria.tipo === 'DESPESA' ? 'Despesa' : categoria.tipo === 'RECEITA' ? 'Receita' : 'Ambos'}
+                                color={categoria.tipo === 'DESPESA' ? 'error' : categoria.tipo === 'RECEITA' ? 'success' : 'info'}
+                                size="small"
+                                variant="outlined"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Box
+                                sx={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: 1,
+                                  backgroundColor: categoria.cor || '#1976d2',
+                                  display: 'inline-block',
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={categoria.ativa ? 'ATIVA' : 'INATIVA'}
+                                color={getStatusColor(categoria.ativa)}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <Tooltip title="Editar">
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  onClick={() => navigate(`/cadastros/categoria/editar/${categoria.id}`)}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Excluir">
+                                <IconButton
+                                  size="small"
+                                  color="error"
+                                  onClick={() => handleDeleteCategoria(categoria.id)}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            </TabPanel>
+          </Box>
         )}
       </Paper>
     </Box>

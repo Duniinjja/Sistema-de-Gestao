@@ -129,9 +129,6 @@ export const updateDespesa = (id, data) =>
 export const deleteDespesa = (id) =>
   api.delete(`/despesas/${id}/`);
 
-export const getCategoriasDespesa = (params) =>
-  api.get('/despesas/categorias/', { params });
-
 // Vendas
 export const getVendas = (params) =>
   api.get('/vendas/', { params });
@@ -165,6 +162,18 @@ export const deleteCliente = (id) =>
 export const getProdutos = (params) =>
   api.get('/vendas/produtos/', { params });
 
+export const getProduto = (id) =>
+  api.get(`/vendas/produtos/${id}/`);
+
+export const createProduto = (data) =>
+  api.post('/vendas/produtos/', data);
+
+export const updateProduto = (id, data) =>
+  api.put(`/vendas/produtos/${id}/`, data);
+
+export const deleteProduto = (id) =>
+  api.delete(`/vendas/produtos/${id}/`);
+
 // Receitas
 export const getReceitas = (params) =>
   api.get('/receitas/', { params });
@@ -181,14 +190,36 @@ export const updateReceita = (id, data) =>
 export const deleteReceita = (id) =>
   api.delete(`/receitas/${id}/`);
 
-export const getCategoriasReceita = (params) =>
-  api.get('/receitas/categorias/', { params });
-
 // Relatórios
 export const getRelatorioFinanceiro = (params) =>
   api.get('/relatorios/financeiro/', { params });
 
 export const getRelatorioConsolidado = (params) =>
   api.get('/relatorios/consolidado/', { params });
+
+// Categorias Globais (gerenciadas pelo Admin Chefe)
+export const getCategorias = (params) =>
+  api.get('/categorias/', { params });
+
+export const getCategoria = (id) =>
+  api.get(`/categorias/${id}/`);
+
+export const createCategoria = (data) =>
+  api.post('/categorias/', data);
+
+export const updateCategoria = (id, data) =>
+  api.put(`/categorias/${id}/`, data);
+
+export const deleteCategoria = (id) =>
+  api.delete(`/categorias/${id}/`);
+
+export const getCategoriasParaDespesas = () =>
+  api.get('/categorias/para_despesas/');
+
+export const getCategoriasParaReceitas = () =>
+  api.get('/categorias/para_receitas/');
+
+export const reordenarCategorias = (ordem) =>
+  api.post('/categorias/reordenar/', { ordem });
 
 export default api;
