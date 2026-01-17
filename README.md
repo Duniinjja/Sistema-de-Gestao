@@ -1,246 +1,331 @@
-# Sistema de Gestão Multiempresas
+# Sistema de Gestao Multiempresas
 
-Sistema web multiempresas com controle centralizado para gerenciamento de despesas, vendas e receitas.
+Sistema web multiempresas com controle centralizado para gerenciamento financeiro completo: despesas, vendas, receitas e analise de resultados.
 
-## Características
+## Visao Geral
 
-- **Multi-Tenant**: Suporte a múltiplas empresas em um único sistema
-- **Admin Chefe**: Controle centralizado de todas as empresas
-- **Admin Empresa**: Gestão individual por empresa
-- **Módulos**: Despesas, Vendas, Receitas, Cadastros e Relatórios
+Este sistema foi desenvolvido para gerenciar multiplas empresas de forma centralizada, oferecendo:
+- Controle financeiro completo (despesas, receitas, vendas)
+- Dashboard com indicadores em tempo real
+- Relatorios consolidados e por empresa
+- Sistema de permissoes baseado em roles
+- Arquitetura multi-tenant segura
 
 ## Arquitetura
 
-- **Backend**: Django + Django REST Framework
-- **Frontend**: React
-- **Banco de Dados**: MySQL (Multi-Tenant)
-- **Autenticação**: JWT (JSON Web Tokens)
-
-## Tipos de Usuários
-
-### 1. Admin Chefe (Super Admin)
-- Cria e gerencia empresas
-- Acesso a todas as empresas e usuários
-- Visualiza relatórios consolidados
-
-### 2. Admin da Empresa
-- Gerencia apenas sua empresa
-- Cadastra usuários internos
-- Controla despesas, vendas e receitas
-
-### 3. Usuário da Empresa
-- Acesso limitado conforme permissões
-- Visualiza e cadastra dados conforme autorização
-
-## Estrutura do Projeto
-
 ```
 Sistema-de-Gestao/
-├── backend/                 # Django API
-│   ├── core/               # Configurações principais
-│   ├── empresas/           # App de empresas
-│   ├── usuarios/           # App de usuários
-│   ├── despesas/           # App de despesas
-│   ├── vendas/             # App de vendas
-│   ├── receitas/           # App de receitas
-│   └── relatorios/         # App de relatórios
+├── backend/                 # Django REST API
+│   ├── core/               # Configuracoes principais
+│   ├── empresas/           # Gerenciamento de empresas
+│   ├── usuarios/           # Autenticacao e usuarios
+│   ├── despesas/           # Modulo de despesas
+│   ├── receitas/           # Modulo de receitas
+│   ├── vendas/             # Modulo de vendas (clientes, produtos)
+│   ├── categorias/         # Categorias centralizadas
+│   └── relatorios/         # Relatorios financeiros
 │
-├── frontend/               # React App
+├── frontend/               # React + Vite
 │   ├── src/
-│   │   ├── components/    # Componentes reutilizáveis
-│   │   ├── pages/         # Páginas do sistema
-│   │   ├── services/      # Serviços de API
-│   │   └── utils/         # Utilitários
+│   │   ├── components/    # Componentes reutilizaveis
+│   │   ├── pages/         # Paginas do sistema
+│   │   ├── context/       # Contextos (Auth, Filter)
+│   │   └── services/      # Servicos de API
 │   └── public/
 │
-└── docs/                  # Documentação
+└── docs/                  # Documentacao
 ```
 
-## Instalação Rápida
+## Stack Tecnologica
 
-### Pré-requisitos
+### Backend
+| Tecnologia | Versao | Descricao |
+|------------|--------|-----------|
+| Django | 5.0 | Framework web Python |
+| Django REST Framework | 3.14 | API REST |
+| Simple JWT | 5.3 | Autenticacao JWT |
+| MySQL | 8.0+ | Banco de dados |
+| django-cors-headers | 4.3 | Configuracao CORS |
+| django-filter | 23.5 | Filtros avancados |
 
+### Frontend
+| Tecnologia | Versao | Descricao |
+|------------|--------|-----------|
+| React | 18.2 | Biblioteca UI |
+| Material-UI (MUI) | 5.14 | Componentes visuais |
+| Recharts | 2.10 | Graficos e visualizacoes |
+| Vite | 5.0 | Build tool |
+| Axios | 1.6 | Cliente HTTP |
+| React Router | 6.20 | Roteamento |
+| React Toastify | 9.1 | Notificacoes |
+| date-fns | 3.0 | Manipulacao de datas |
+
+## Tipos de Usuarios
+
+### 1. Admin Chefe (Super Admin)
+- Acesso total ao sistema
+- Gerencia todas as empresas
+- Visualiza relatorios consolidados
+- Gerencia categorias globais
+- Cria admins de empresa
+
+### 2. Admin da Empresa
+- Gerencia sua empresa
+- Cadastra usuarios internos
+- Controle total de despesas/receitas/vendas
+- Relatorios da empresa
+
+### 3. Usuario da Empresa
+- Acesso limitado conforme permissoes
+- Registra transacoes
+- Visualiza dados autorizados
+
+## Funcionalidades
+
+### Dashboard
+- Cards com indicadores principais
+  - Receitas do periodo
+  - Vendas do periodo
+  - Despesas do periodo
+  - Saldo (resultado)
+- Alertas de despesas pendentes
+- Resumo financeiro visual
+- Filtros por periodo e empresa
+
+### Despesas
+- Cadastro com categorias
+- Status: Pendente, Paga, Vencida, Cancelada
+- Anexo de comprovantes
+- Filtros avancados
+- Data de vencimento
+
+### Receitas
+- Cadastro categorizado
+- Status: Pendente, Recebida, Cancelada
+- Data prevista vs realizada
+- Multiplas formas de recebimento
+
+### Vendas
+- Registro com multiplos itens
+- Gestao de clientes
+- Catalogo de produtos
+- Aplicacao de descontos
+- Controle de estoque
+
+### Cadastros
+- Usuarios
+- Empresas
+- Clientes
+- Produtos/Servicos
+- Categorias (Despesas e Receitas)
+
+### Relatorios
+- Relatorio Financeiro por empresa
+- Relatorio Consolidado (Admin Chefe)
+- Analise por categoria
+- Graficos e estatisticas
+- Filtros por periodo
+
+## Instalacao
+
+### Pre-requisitos
 - Python 3.9+
 - Node.js 16+
 - MySQL 8.0+
 
-### 1. Configurar Banco de Dados
+### 1. Banco de Dados
 
 ```sql
 CREATE DATABASE sistema_gestao CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-### 2. Backend (Django)
+### 2. Backend
 
 ```bash
 cd backend
+
+# Criar ambiente virtual
 python -m venv venv
 
+# Ativar ambiente
 # Windows:
 venv\Scripts\activate
 # Linux/Mac:
 source venv/bin/activate
 
+# Instalar dependencias
 pip install -r requirements.txt
 
-# Configure o arquivo .env (copie de .env.example)
-# Edite com suas credenciais do MySQL
+# Configurar variaveis de ambiente
+# Copie .env.example para .env e configure suas credenciais
 
+# Executar migracoes
 python manage.py migrate
+
+# Criar superusuario (Admin Chefe)
 python manage.py createsuperuser
+
+# Iniciar servidor
 python manage.py runserver
 ```
 
-Backend disponível em: `http://localhost:8000`
+Backend disponivel em: `http://localhost:8000`
 
-### 3. Frontend (React)
+### 3. Frontend
 
 ```bash
 cd frontend
+
+# Instalar dependencias
 npm install
+
+# Iniciar servidor de desenvolvimento
 npm run dev
 ```
 
-Frontend disponível em: `http://localhost:3000`
+Frontend disponivel em: `http://localhost:3000`
 
-### Documentação Completa
+### Inicio Rapido (Windows)
 
-- [Guia de Instalação Detalhado](docs/INSTALACAO.md)
-- [Manual do Usuário](docs/MANUAL_USUARIO.md)
-- [Documentação da API](docs/API.md)
+Execute os arquivos batch na pasta raiz:
+- `iniciar-backend.bat` - Inicia o servidor Django
+- `iniciar-frontend.bat` - Inicia o servidor Vite
+- `iniciar-sistema.bat` - Inicia ambos simultaneamente
 
-## Funcionalidades Principais
+## Estrutura da API
 
-### 📊 Dashboard
-- Visão geral financeira da empresa
-- Indicadores de receitas, vendas e despesas do mês
-- Saldo mensal
-- Alertas de despesas pendentes
+### Endpoints Principais
 
-### 💰 Despesas
-- Cadastro e gerenciamento de despesas
-- Categorização de gastos
-- Controle de status (Pendente, Paga, Vencida, Cancelada)
-- Anexo de comprovantes
-- Filtros e busca avançada
+| Metodo | Endpoint | Descricao |
+|--------|----------|-----------|
+| POST | `/api/usuarios/login/` | Login |
+| POST | `/api/token/refresh/` | Renovar token |
+| GET | `/api/usuarios/me/` | Dados do usuario logado |
+| GET/POST | `/api/empresas/` | Empresas |
+| GET/POST | `/api/usuarios/` | Usuarios |
+| GET/POST | `/api/despesas/` | Despesas |
+| GET/POST | `/api/receitas/` | Receitas |
+| GET/POST | `/api/vendas/` | Vendas |
+| GET/POST | `/api/vendas/clientes/` | Clientes |
+| GET/POST | `/api/vendas/produtos/` | Produtos |
+| GET/POST | `/api/categorias/` | Categorias |
+| GET | `/api/relatorios/financeiro/` | Relatorio financeiro |
+| GET | `/api/relatorios/consolidado/` | Relatorio consolidado |
 
-### 🛒 Vendas
-- Registro de vendas com itens
-- Gestão de clientes
-- Catálogo de produtos/serviços
-- Controle de estoque
-- Aplicação de descontos
+### Autenticacao
 
-### 📈 Receitas
-- Controle de entradas financeiras
-- Categorização de receitas
-- Previsão vs Realizado
-- Múltiplas formas de recebimento
+O sistema utiliza JWT (JSON Web Tokens):
+- Access token: 60 minutos
+- Refresh token: 7 dias
+- Renovacao automatica pelo frontend
 
-### 👥 Cadastros
-- Gerenciamento de usuários
-- Cadastro de clientes
-- Cadastro de produtos/serviços
-- Categorias de despesas e receitas
+## Seguranca
 
-### 📑 Relatórios
-- **Relatório Financeiro**: Análise detalhada por empresa
-- **Relatório Consolidado**: Visão geral de todas as empresas (Admin Chefe)
-- Filtros por período
-- Análise por categoria
-- Gráficos e estatísticas
+- Autenticacao JWT com refresh automatico
+- Isolamento de dados por empresa (Multi-Tenant)
+- Sistema de permissoes baseado em roles
+- Protecao contra acesso nao autorizado
+- Validacoes no backend
+- Logout automatico por inatividade (5 min)
+- CORS configurado
 
-## Segurança e Permissões
+## Modelo de Dados
 
-- ✅ Autenticação JWT (JSON Web Tokens)
-- ✅ Isolamento de dados por empresa (Multi-Tenant)
-- ✅ Sistema de permissões baseado em roles
-- ✅ Proteção contra acesso não autorizado
-- ✅ Refresh token automático
-- ✅ Validações de dados no backend
+```
+Empresa (raiz)
+├── Usuario (ForeignKey -> Empresa)
+├── Despesa (ForeignKey -> Empresa)
+├── Receita (ForeignKey -> Empresa)
+└── Venda (ForeignKey -> Empresa)
+    ├── Cliente
+    ├── Produto
+    └── ItemVenda
 
-## Tecnologias Utilizadas
+Categoria (Global)
+├── Tipo: DESPESA | RECEITA
+└── Gerenciada por Admin Chefe
+```
 
-### Backend
-- **Django 5.0**: Framework web Python
-- **Django REST Framework**: API REST
-- **Simple JWT**: Autenticação JWT
-- **MySQL**: Banco de dados relacional
-- **django-cors-headers**: Configuração de CORS
-- **django-filter**: Filtros avançados
+## Scripts de Inicializacao
 
-### Frontend
-- **React 18**: Biblioteca JavaScript
-- **Material-UI (MUI)**: Componentes de interface
-- **React Router**: Roteamento
-- **Axios**: Cliente HTTP
-- **Recharts**: Gráficos e visualizações
-- **React Toastify**: Notificações
-- **Vite**: Build tool
+### Windows (Batch)
 
-## Screenshots
+```batch
+:: iniciar-backend.bat
+cd backend
+call venv\Scripts\activate
+python manage.py runserver
 
-### Dashboard
-![Dashboard](docs/images/dashboard.png)
+:: iniciar-frontend.bat
+cd frontend
+npm run dev
 
-### Despesas
-![Despesas](docs/images/despesas.png)
+:: iniciar-sistema.bat
+start cmd /k "cd backend && venv\Scripts\activate && python manage.py runserver"
+start cmd /k "cd frontend && npm run dev"
+```
 
-### Relatórios
-![Relatórios](docs/images/relatorios.png)
+## Desenvolvimento
 
-## Próximos Passos
+### Estrutura de Componentes React
 
-Após a instalação:
+```
+pages/
+├── Dashboard.jsx       # Dashboard com indicadores
+├── Despesas.jsx        # Listagem de despesas
+├── DespesaForm.jsx     # Formulario de despesa
+├── Receitas.jsx        # Listagem de receitas
+├── ReceitaForm.jsx     # Formulario de receita
+├── Vendas.jsx          # Listagem de vendas
+├── VendaForm.jsx       # Formulario de venda
+├── Cadastros.jsx       # Hub de cadastros
+├── Relatorios.jsx      # Relatorios e graficos
+└── Perfil.jsx          # Perfil do usuario
+```
 
-1. ✅ Crie o superusuário (Admin Chefe)
-2. ✅ Acesse o Django Admin e crie a primeira empresa
-3. ✅ Crie usuários para a empresa
-4. ✅ Configure categorias de despesas e receitas
-5. ✅ Cadastre clientes e produtos
-6. ✅ Comece a registrar transações
-7. ✅ Gere seus primeiros relatórios
+### Contextos
 
-## Contribuindo
-
-Contribuições são bem-vindas! Por favor:
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Add: Nova feature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
-
-## Suporte
-
-Para dúvidas, problemas ou sugestões:
-
-- 📧 Email: suporte@sistema-gestao.com
-- 📖 [Documentação](docs/)
-- 🐛 [Reportar Bug](https://github.com/seu-usuario/sistema-gestao/issues)
+- **AuthContext**: Gerencia autenticacao, usuario logado, tokens
+- **FilterContext**: Filtros globais (empresa, usuario, periodo)
 
 ## Roadmap
 
-Funcionalidades planejadas:
+### Implementados
+- [x] Sistema multi-tenant
+- [x] Autenticacao JWT
+- [x] CRUD completo (despesas, receitas, vendas)
+- [x] Dashboard com indicadores
+- [x] Relatorios basicos
+- [x] Sistema de categorias centralizado
+- [x] Filtros avancados
 
-- [ ] Exportação de relatórios para Excel/PDF
-- [ ] Gráficos avançados e dashboards personalizáveis
-- [ ] Integração com bancos (Open Banking)
-- [ ] App mobile (React Native)
-- [ ] Notificações por email/SMS
-- [ ] Backup automático
-- [ ] Auditoria e logs de atividades
-- [ ] Integração com contabilidade
-- [ ] API pública para integrações
+### Planejados
+- [ ] Dashboard avancado com KPIs financeiros
+  - [ ] Receita Operacional Liquida
+  - [ ] Analise de Ticket Medio
+  - [ ] Comparativo mes a mes
+  - [ ] Graficos de evolucao
+  - [ ] Benchmarks de mercado
+- [ ] Exportacao Excel/PDF
+- [ ] Graficos de evolucao mensal
+- [ ] DRE automatico
+- [ ] App mobile
+- [ ] Notificacoes email/SMS
+- [ ] Integracao bancaria (Open Banking)
+- [ ] Auditoria e logs
 
-## Licença
+## Contribuindo
 
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/NovaFeature`)
+3. Commit suas mudancas (`git commit -m 'Add: Nova feature'`)
+4. Push para a branch (`git push origin feature/NovaFeature`)
+5. Abra um Pull Request
 
-## Autores
+## Licenca
 
-- **Sistema de Gestão Multiempresas** - Desenvolvido com ❤️
+Este projeto esta licenciado sob a Licenca MIT.
 
 ---
 
-⭐ Se este projeto foi útil, considere dar uma estrela no GitHub!
+Desenvolvido com Django + React

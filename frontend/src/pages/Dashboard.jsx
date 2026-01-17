@@ -11,6 +11,8 @@ import {
   Chip,
   Avatar,
   Divider,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   TrendingUp,
@@ -21,10 +23,17 @@ import {
   Receipt,
   Business,
   AttachMoney,
+  Analytics,
+  Dashboard as DashboardIcon,
+  Assessment,
+  ShowChart,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useFilter } from '../context/FilterContext';
 import AdminFilters from '../components/AdminFilters';
+import AnaliseReceita from '../components/AnaliseReceita';
+import DRE from '../components/DRE';
+import GraficoEvolucao from '../components/GraficoEvolucao';
 import {
   getDespesas,
   getVendas,
@@ -202,6 +211,7 @@ const Dashboard = () => {
     getDateRangeLabel,
   } = useFilter();
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(0);
   const [stats, setStats] = useState({
     total_receitas: 0,
     total_vendas: 0,
@@ -372,6 +382,28 @@ const Dashboard = () => {
       {/* Filtros - visível para todos */}
       <AdminFilters showUsuarioFilter={true} showEmpresaFilter={true} showDateFilter={true} />
 
+      {/* Tabs de Navegacao */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs
+          value={activeTab}
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          sx={{
+            '& .MuiTab-root': {
+              fontWeight: 600,
+              textTransform: 'none',
+            },
+          }}
+        >
+          <Tab icon={<DashboardIcon />} iconPosition="start" label="Visao Geral" />
+          <Tab icon={<Analytics />} iconPosition="start" label="Analise de Receita" />
+          <Tab icon={<Assessment />} iconPosition="start" label="DRE" />
+          <Tab icon={<ShowChart />} iconPosition="start" label="Evolucao" />
+        </Tabs>
+      </Box>
+
+      {/* Conteudo da Tab Visao Geral */}
+      {activeTab === 0 && (
+        <>
       {/* Stats Cards */}
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
@@ -533,6 +565,23 @@ const Dashboard = () => {
           </Paper>
         </Grid>
       </Grid>
+        </>
+      )}
+
+      {/* Conteudo da Tab Analise de Receita */}
+      {activeTab === 1 && (
+        <AnaliseReceita />
+      )}
+
+      {/* Conteudo da Tab DRE */}
+      {activeTab === 2 && (
+        <DRE />
+      )}
+
+      {/* Conteudo da Tab Evolucao */}
+      {activeTab === 3 && (
+        <GraficoEvolucao />
+      )}
     </Box>
   );
 };
