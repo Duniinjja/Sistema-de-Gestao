@@ -32,11 +32,13 @@ import {
   getUsuarios,
   getClientes,
   deleteCliente,
+  getProdutos,
+  deleteProduto,
   getCategorias,
   deleteCategoria,
+  getEmpresas,
+  deleteEmpresa,  
 } from '../services/api';
-
-//teste
 
 const TabPanel = ({ children, value, index }) => {
   return (
@@ -50,10 +52,12 @@ const Cadastros = () => {
   const [tabValue, setTabValue] = useState(0);
   const navigate = useNavigate();
   const { isAdminChefe } = useAuth();
-
+  const { user } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
   const [clientes, setClientes] = useState([]);
+  const [produtos, setProdutos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const handleTabChange = (event, newValue) => {
@@ -92,7 +96,24 @@ const Cadastros = () => {
     }
   };
 
-  const handleDeleteCategoria = async (id) => {
+  const handleDeleteProduto = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir este produto?')) {
+      return;
+    }
+
+    try {
+      const response = await deleteProduto(id);
+      console.log(response)
+      toast.success('Produto excluído com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir produto');
+    }
+    finally {
+      loadProdutos();
+    }
+  };
+
+  const handleDeleteCategorias = async (id) => {
     if (!window.confirm('Tem certeza que deseja excluir esta categoria?')) {
       return;
     }
@@ -100,75 +121,94 @@ const Cadastros = () => {
     try {
       await deleteCategoria(id);
       toast.success('Categoria excluída com sucesso!');
-      loadCategorias();
     } catch (error) {
-      if (error.response?.status === 500) {
-        toast.error('Não é possível excluir: categoria em uso');
-      } else {
-        toast.error('Erro ao excluir categoria');
-      }
+      toast.error('Erro ao excluir categoria');
+    }
+    finally {
+      loadCategorias();
+    }
+  };
+
+  const handleDeleteEmpresas = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta empresa?')) {
+      return;
+    }
+
+    try {
+      await deleteEmpresa(id);
+      toast.success('Empresa excluída com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir empresa');
+    }
+    finally {
+      loadEmpresas();
     }
   };
 
   const loadUsuarios = async () => {
     try {
-      setLoading(true);
-      const response = await getUsuarios();
-      let data = response.data.results || response.data;
-
-      // Garantir que data é um array
-      if (!Array.isArray(data)) {
-        data = [];
-      }
-
-      await setUsuarios(data);
-
+      const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
+      const response = await getUsuarios(params);
+      setUsuarios(response.data.results || response.data);
     } catch (error) {
-      toast.error('Erro ao carregar usuários');
-    } finally {
-      setLoading(false);
+      console.error('Erro ao carregar usuários:', error);
+      toast.error('Erro ao carregar usuários: ' + (error.response?.data?.message || error.message));
     }
-  }
+  };
 
   const loadClientes = async () => {
     try {
-      setLoading(true);
-      const response = await getClientes();
-      let data = response.data.results || response.data;
-
-      // Garantir que data é um array
-      if (!Array.isArray(data)) {
-        data = [];
-      }
-
-      await setClientes(data);
-
+      const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
+      const response = await getClientes(params);
+      setClientes(response.data.results || response.data);
     } catch (error) {
-      toast.error('Erro ao carregar clientes');
-    } finally {
-      setLoading(false);
+      console.error('Erro ao carregar clientes:', error);
+      toast.error('Erro ao carregar clientes: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const loadProdutos = async () => {
+    try {
+      const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
+      const response = await getProdutos(params);
+      setProdutos(response.data.results || response.data);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+      toast.error('Erro ao carregar produtos: ' + (error.response?.data?.message || error.message));
     }
   };
 
   const loadCategorias = async () => {
     try {
-      setLoading(true);
       const response = await getCategorias();
+      setCategorias(response.data.results || response.data);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+      toast.error('Erro ao carregar categorias: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const loadEmpresas = async () => {
+    try {
+      setLoading(true);
+      const response = await getEmpresas();
       let data = response.data.results || response.data;
 
+      // Garantir que data é um array
       if (!Array.isArray(data)) {
         data = [];
       }
 
-      setCategorias(data);
+      await setEmpresas(data);
+
     } catch (error) {
-      toast.error('Erro ao carregar categorias');
+      toast.error('Erro ao carregar empresas');
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-    const getStatusColor = (status) => {
+  const getStatusColor = (status) => {
     const colors = {
       true: 'success',
       false: 'error',
@@ -177,12 +217,11 @@ const Cadastros = () => {
   };
 
   useEffect(() => {
-    if (isAdminChefe()) {
-      loadCategorias();
-    } else {
-      loadUsuarios();
-      loadClientes();
-    }
+  loadUsuarios()
+  loadClientes()
+  loadProdutos()
+  loadCategorias()
+  loadEmpresas()
   }, []);
 
   return (
@@ -281,7 +320,6 @@ const Cadastros = () => {
           </Box>
         </TabPanel>
 
-
         <TabPanel value={tabValue} index={1}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
             <Box>
@@ -378,6 +416,69 @@ const Cadastros = () => {
                 Novo Produto
               </Button>
             </Box>
+          </Box>
+          <Box sx={{ mt: 2 }}>
+            <TableContainer component={Paper} sx={{ mt: 3 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell align="center">Código</TableCell>
+                    <TableCell align="center">Nome</TableCell>
+                    <TableCell align="center">Descrição</TableCell>
+                    <TableCell align="center">Preço</TableCell>
+                    <TableCell align="center">Estoque</TableCell>
+                    <TableCell align="center">Status</TableCell>
+                    <TableCell align="center">Ações</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {produtos.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center">
+                        Nenhuma despesa encontrada no período selecionado
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    produtos.map((produto) => (
+                      <TableRow key={produto.id}>
+                        <TableCell align="center">{produto.codigo} </TableCell>
+                        <TableCell>{produto.nome} </TableCell>
+                        <TableCell>{produto.descricao}</TableCell>
+                        <TableCell align="right">R$ {produto.preco}</TableCell>
+                        <TableCell align="right">{produto.estoque}</TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={produto.ativo ? 'ATIVO' : 'INATIVO'}
+                            color={getStatusColor(produto.ativo)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Tooltip title="Editar">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => navigate(`/cadastros/produto/editar/${produto.id}`)}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Excluir">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteProduto(produto.id)}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
         </TabPanel>
         </Box>
