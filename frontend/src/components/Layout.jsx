@@ -43,11 +43,11 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isAdminChefe, isUsuarioEmpresa, getUserPhotoUrl, getUserInitials } = useAuth();
-  console.log(user);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const [isDrawerExpanded, setIsDrawerExpanded] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
+  const [menuOpenFromCollapsed, setMenuOpenFromCollapsed] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -60,22 +60,28 @@ const Layout = () => {
     setIsDrawerExpanded(!isDrawerExpanded);
   };
 
-  const handleUserMenuOpen = (event) => {
+  const handleUserMenuOpen = (event, isCollapsed = false) => {
+    // Impede que o evento propague e feche o drawer mobile
+    event.stopPropagation();
+    setMenuOpenFromCollapsed(isCollapsed);
     setUserMenuAnchor(event.currentTarget);
   };
 
   const handleUserMenuClose = () => {
     setUserMenuAnchor(null);
+    setMenuOpenFromCollapsed(false);
   };
 
   const handleLogout = () => {
     handleUserMenuClose();
+    setMobileOpen(false); // Fecha o drawer mobile ao sair
     logout();
     navigate('/login');
   };
 
   const handleNavigateProfile = () => {
     handleUserMenuClose();
+    setMobileOpen(false); // Fecha o drawer mobile ao navegar para perfil
     navigate('/perfil');
   };
 
@@ -234,22 +240,41 @@ const Layout = () => {
         })}
       </List>
 
-      {/* Footer com informações do usuário (apenas quando expandido) - clicável */}
-      {!isCollapsed && (
-        <Box
-          onClick={handleUserMenuOpen}
-          sx={{
-            p: 2,
-            borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            '&:hover': {
-              backgroundColor: 'rgba(0, 0, 0, 0.25)',
-            },
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      {/* Footer com informações do usuário - clicável */}
+      <Box
+        onClick={(e) => handleUserMenuOpen(e, isCollapsed)}
+        sx={{
+          p: isCollapsed ? 1.5 : 2,
+          borderTop: '1px solid rgba(255, 255, 255, 0.12)',
+          backgroundColor: 'rgba(0, 0, 0, 0.1)',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          display: 'flex',
+          justifyContent: isCollapsed ? 'center' : 'flex-start',
+          '&:hover': {
+            backgroundColor: 'rgba(0, 0, 0, 0.25)',
+          },
+        }}
+      >
+        {isCollapsed ? (
+          /* Versão compacta - apenas avatar */
+          <Tooltip title={`${user?.first_name || ''} ${user?.last_name || ''}`} placement="right" arrow>
+            <Avatar
+              src={getUserPhotoUrl()}
+              sx={{
+                width: 40,
+                height: 40,
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                color: 'white',
+                border: '2px solid rgba(255, 255, 255, 0.3)',
+              }}
+            >
+              {getUserInitials()}
+            </Avatar>
+          </Tooltip>
+        ) : (
+          /* Versão expandida - avatar + nome + seta */
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
             <Avatar
               src={getUserPhotoUrl()}
               sx={{
@@ -297,8 +322,8 @@ const Layout = () => {
               }}
             />
           </Box>
-        </Box>
-      )}
+        )}
+      </Box>
     </Box>
   );
 
@@ -348,7 +373,7 @@ const Layout = () => {
 
           {/* User menu - toda a área é clicável */}
           <Box
-            onClick={handleUserMenuOpen}
+            onClick={(e) => handleUserMenuOpen(e, false)}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -398,12 +423,12 @@ const Layout = () => {
         anchorEl={userMenuAnchor}
         onClose={handleUserMenuClose}
         anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
+          vertical: menuOpenFromCollapsed ? 'center' : 'top',
+          horizontal: menuOpenFromCollapsed ? 'right' : 'center',
         }}
         transformOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center',
+          vertical: menuOpenFromCollapsed ? 'center' : 'bottom',
+          horizontal: menuOpenFromCollapsed ? 'left' : 'center',
         }}
         slotProps={{
           paper: {
@@ -415,6 +440,7 @@ const Layout = () => {
               borderColor: 'divider',
               boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
               overflow: 'hidden',
+              ml: menuOpenFromCollapsed ? 1 : 0,
             },
           },
         }}
