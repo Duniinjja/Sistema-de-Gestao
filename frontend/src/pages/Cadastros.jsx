@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 import {
   Box,
   Typography,
+  Button,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Tabs,
   Tab,
-  Paper,
-  Button,
+  Chip,
+  CircularProgress,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 
 import {
@@ -15,6 +26,15 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
+
+import {
+  createUsuario,
+  updateUsuario,
+  changePassword,
+  deleteUsuario,
+  getUsuarios
+  
+} from '../services/api';
 
 //teste
 
@@ -31,11 +51,60 @@ const Cadastros = () => {
   const navigate = useNavigate();
   const { isAdminChefe } = useAuth();
 
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
 
-  console.log(useAuth())
+  const handleDelete = async (id) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta despesa?')) {
+      return;
+    }
+
+    try {
+      await deleteUsuario(id);
+      toast.success('Usuário excluído com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir despesa');
+    }
+    finally {
+      loadUsuarios();
+    }
+  };
+
+  const loadUsuarios = async () => {
+    try {
+      setLoading(true);
+      const response = await getUsuarios();
+      let data = response.data.results || response.data;
+
+      // Garantir que data é um array
+      if (!Array.isArray(data)) {
+        data = [];
+      }
+
+      await setUsuarios(data);
+
+    } catch (error) {
+      toast.error('Erro ao carregar usuários');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+    const getStatusColor = (status) => {
+    const colors = {
+      true: 'success',
+      false: 'error',
+    };
+    return colors[status] || 'default';
+  };
+
+  useEffect(() => {
+  loadUsuarios()
+  }, []);
 
   return (
     <Box>
@@ -62,15 +131,74 @@ const Cadastros = () => {
                 Aqui você pode cadastrar e gerenciar usuários do sistema.
               </Typography>
             </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => navigate('/cadastros/usuario/nova')}
-                >
-                Novo Usuário
-              </Button>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/cadastros/usuario/nova')}
+                  >
+                  Novo Usuário
+                </Button>
+            </Box>
           </Box>
+          <Box sx={{ mt: 2 }}>
+            <TableContainer component={Paper} sx={{ mt: 3 }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Nome</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell align="center">Cargo</TableCell>
+              <TableCell align="center">Status</TableCell>
+              <TableCell align="center">Ações</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {usuarios.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  Nenhuma despesa encontrada no período selecionado
+                </TableCell>
+              </TableRow>
+            ) : (
+              usuarios.map((usuario) => (
+                <TableRow key={usuario.id}>
+                  <TableCell>{usuario.first_name} {usuario.last_name}</TableCell>
+                  <TableCell>{usuario.email}</TableCell>
+                  <TableCell align="center">{usuario.tipo_usuario === "ADMIN_EMPRESA" ? "Administrador" : "Usuário"}</TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={usuario.is_active ? 'ATIVO' : 'INATIVO'}
+                      color={getStatusColor(usuario.is_active)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Tooltip title="Editar">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => navigate(`/cadastros/usuario/editar/${usuario.id}`)}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Excluir">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(usuario.id)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
           </Box>
         </TabPanel>
 

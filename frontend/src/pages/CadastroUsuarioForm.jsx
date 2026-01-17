@@ -15,75 +15,157 @@ import {
   InputAdornment,
 } from '@mui/material';
 import {
+  Person as PersonIcon,
   Save as SaveIcon,
+  Lock as LockIcon,
+  CameraAlt as CameraIcon,
   ArrowBack as ArrowBackIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import {
-  getDespesa,
-  createDespesa,
-  updateDespesa,
-  getCategoriasDespesa,
+  createUsuario,
+  updateUsuario,
+  changePassword,
+  getUsuario
 } from '../services/api';
 
-const DespesaForm = () => {
+const CadastroUsuarioForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [categorias, setCategorias] = useState([]);
+  const [errors, setErrors] = useState({});
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+      senha_atual: '',
+      nova_senha: '',
+      confirmar_senha: '',
+    });
   const [formData, setFormData] = useState({
-    descricao: '',
-    categoria: '',
-    valor: '',
-    data_vencimento: '',
-    data_pagamento: '',
-    status: 'PENDENTE',
-    forma_pagamento: 'DINHEIRO',
-    observacoes: '',
+    is_active: true,
   });
 
   useEffect(() => {
-    loadCategorias();
     if (id) {
-      loadDespesa();
+      loadUsuario();
     }
   }, [id]);
 
-  const loadCategorias = async () => {
-    try {
-      const params = user?.empresa_id ? { empresa: user.empresa_id } : {};
-      const response = await getCategoriasDespesa(params);
-      setCategorias(response.data.results || response.data);
-    } catch (error) {
-      console.error('Erro ao carregar categorias:', error);
-      toast.error('Erro ao carregar categorias: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const loadDespesa = async () => {
+  const loadUsuario = async () => {
     try {
       setLoading(true);
-      const response = await getDespesa(id);
-      const despesa = response.data;
+      const response = await getUsuario(id);
+      const usuario = response.data;
       setFormData({
-        descricao: despesa.descricao || '',
-        categoria: despesa.categoria || '',
-        valor: despesa.valor || '',
-        data_vencimento: despesa.data_vencimento || '',
-        data_pagamento: despesa.data_pagamento || '',
-        status: despesa.status || 'PENDENTE',
-        forma_pagamento: despesa.forma_pagamento || 'DINHEIRO',
-        observacoes: despesa.observacoes || '',
+        email: usuario.email || '',
+        first_name: usuario.first_name || '',
+        last_name: usuario.last_name || '',
+        tipo_usuario: usuario.tipo_usuario || '',
+        is_active: usuario.is_active || true,
       });
     } catch (error) {
-      toast.error('Erro ao carregar despesa');
+      toast.error('Erro ao carregar usuario');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+
+    const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+    // Limpar erro do campo
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+  const validatePasswordForm = () => {
+    const newErrors = {};
+
+    if (!passwordData.senha_atual) {
+      newErrors.senha_atual = 'Senha atual é obrigatória';
+    }
+
+    if (!passwordData.nova_senha) {
+      newErrors.nova_senha = 'Nova senha é obrigatória';
+    } else if (passwordData.nova_senha.length < 6) {
+      newErrors.nova_senha = 'Senha deve ter pelo menos 6 caracteres';
+    }
+
+    if (!passwordData.confirmar_senha) {
+      newErrors.confirmar_senha = 'Confirmação de senha é obrigatória';
+    } else if (passwordData.nova_senha !== passwordData.confirmar_senha) {
+      newErrors.confirmar_senha = 'As senhas não conferem';
+    }
+
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handlePasswordSubmit = async (e) => {
+      e.preventDefault();
+  
+      if (!validatePasswordForm()) {
+        return;
+      }
+  
+      try {
+        setSavingPassword(true);
+        await changePassword(user.id, {
+          old_password: passwordData.senha_atual,
+          new_password: passwordData.nova_senha,
+        });
+        toast.success('Senha alterada com sucesso!');
+        setPasswordData({
+          senha_atual: '',
+          nova_senha: '',
+          confirmar_senha: '',
+        });
+      } catch (error) {
+        const responseData = error.response?.data;
+  
+        // Verifica diferentes formatos de erro do backend
+        if (responseData?.old_password) {
+          // Formato: { old_password: ['Senha atual incorreta.'] }
+          const msg = Array.isArray(responseData.old_password)
+            ? responseData.old_password[0]
+            : responseData.old_password;
+          setErrors(prev => ({ ...prev, senha_atual: msg }));
+        } else if (responseData?.detail) {
+          // Formato: { detail: 'Mensagem de erro' }
+          toast.error(responseData.detail);
+        } else {
+          toast.error('Erro ao alterar senha');
+        }
+        console.error(error);
+      } finally {
+        setSavingPassword(false);
+      }
+    };
+
+  const editPassword = async (suserId, password, password_confirm) => {
+    try {
+      const response = await changePassword(suserId, { password, password_confirm });
+
+      console.log(response)
+      toast.success('Senha alterada com sucesso!');
+    }
+    catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      const errorMessage = error.response?.data?.message
+        || error.response?.data?.detail
+        || error.response?.data?.error
+        || Object.values(error.response?.data || {}).flat().join(', ')
+        || error.message;
+      toast.error('Erro ao alterar senha: ' + errorMessage);
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -96,21 +178,23 @@ const DespesaForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    console.log('Form Data:', formData);
+
     // Validações
-    if (!formData.descricao.trim()) {
-      toast.error('Descrição é obrigatória');
+    if (!formData.email.trim()) {
+      toast.error('Email é obrigatório');
       return;
     }
-    if (!formData.categoria) {
-      toast.error('Categoria é obrigatória');
+    if (!formData.first_name.trim()) {
+      toast.error('Nome é obrigatório');
       return;
     }
-    if (!formData.valor || parseFloat(formData.valor) <= 0) {
-      toast.error('Valor deve ser maior que zero');
+    if (!formData.last_name.trim()) {
+      toast.error('Sobrenome é obrigatório');
       return;
     }
-    if (!formData.data_vencimento) {
-      toast.error('Data de vencimento é obrigatória');
+    if (!formData.tipo_usuario) {
+      toast.error('Tipo de usuário é obrigatório');
       return;
     }
 
@@ -126,27 +210,29 @@ const DespesaForm = () => {
       const data = {
         ...formData,
         empresa: user.empresa_id,
-        usuario_cadastro: user.id,
+        // usuario_cadastro: user.id,
       };
 
       console.log('Dados enviados:', data);
 
       if (id) {
-        await updateDespesa(id, data);
-        toast.success('Despesa atualizada com sucesso!');
+        await updateUsuario(id, data);
+        if (formData.password && formData.password.trim()) await editPassword(id, formData.password, formData.password_confirm);
+        toast.success('Usuário atualizada com sucesso!');
       } else {
-        await createDespesa(data);
-        toast.success('Despesa cadastrada com sucesso!');
+        await createUsuario(data);
+        toast.success('Usuário cadastrada com sucesso!');
       }
-      navigate('/despesas');
+      navigate('/cadastros');
     } catch (error) {
-      console.error('Erro ao salvar despesa:', error);
+      console.error('Erro ao salvar usuario:', error);
+      console.log(error)
       const errorMessage = error.response?.data?.message
         || error.response?.data?.detail
         || error.response?.data?.error
         || Object.values(error.response?.data || {}).flat().join(', ')
         || error.message;
-      toast.error('Erro ao salvar despesa: ' + errorMessage);
+      toast.error('Erro ao salvar usuario: ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -165,163 +251,131 @@ const DespesaForm = () => {
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/despesas')}
+          onClick={() => navigate('/cadastros')}
           variant="outlined"
         >
           Voltar
         </Button>
         <Typography variant="h4">
-          {id ? 'Editar Despesa' : 'Nova Despesa'}
+          {id ? 'Editar Usuário' : 'Novo Usuário'}
         </Typography>
       </Box>
 
       <Paper sx={{ p: 3 }}>
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            {/* Descrição */}
+            {/* Email */}
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Descrição"
-                name="descricao"
-                value={formData.descricao}
+                label="Email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 required
-                placeholder="Ex: Energia Janeiro 2026"
+                placeholder="user@email.com"
               />
             </Grid>
 
-            {/* Categoria */}
+            {/* Senha */}
+            {id == null && (
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Senha"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required={!id ? true : false}
+                  placeholder="Password@123"
+                  error={!!errors.nova_senha}
+                  helperText={errors.nova_senha}
+                />
+              </Grid>
+            )}
+
+            {/* Confirmar Senha */}
+            {id == null && (
+              <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Confirmar Senha"
+                name="password_confirm"
+                value={formData.password_confirm}
+                onChange={handleChange}
+                required={!id ? true : false}
+                placeholder="Password@123"
+                error={!!errors.confirmar_senha}
+                helperText={errors.confirmar_senha}
+                />
+              </Grid>
+            )}
+
+            {/* Nome */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Nome"
+                name="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                required
+                placeholder="Nome"
+              />
+            </Grid>
+
+            {/* Sobrenome */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Sobrenome"
+                name="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                placeholder="Sobrenome"
+              />
+            </Grid>
+
+            {/* Tipo de Usuario */}
             <Grid item xs={12} md={6}>
               <FormControl fullWidth required>
-                <InputLabel>Categoria</InputLabel>
+                <InputLabel>Tipo de Usuário</InputLabel>
                 <Select
-                  name="categoria"
-                  value={formData.categoria}
+                  name="tipo_usuario"
+                  value={formData.tipo_usuario}
                   onChange={handleChange}
-                  label="Categoria"
+                  label="Tipo de Usuário"
                 >
-                  {categorias.map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
-                      {cat.nome}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="USUARIO_EMPRESA">Usuário</MenuItem>
+                  <MenuItem value="ADMIN_EMPRESA">Administrador</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-
-            {/* Valor */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Valor"
-                name="valor"
-                type="number"
-                value={formData.valor}
-                onChange={handleChange}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">R$</InputAdornment>
-                  ),
-                }}
-                inputProps={{
-                  step: '0.01',
-                  min: '0',
-                }}
-              />
-            </Grid>
-
-            {/* Data Vencimento */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Data de Vencimento"
-                name="data_vencimento"
-                type="date"
-                value={formData.data_vencimento}
-                onChange={handleChange}
-                required
-                InputLabelProps={{
-                  shrink: true,
-                }}
-              />
-            </Grid>
-
-            {/* Data Pagamento */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Data de Pagamento"
-                name="data_pagamento"
-                type="date"
-                value={formData.data_pagamento}
-                onChange={handleChange}
-                InputLabelProps={{
-                  shrink: true,
-                }}
-                helperText="Deixe em branco se ainda não foi pago"
-              />
             </Grid>
 
             {/* Status */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  label="Status"
-                >
-                  <MenuItem value="PENDENTE">Pendente</MenuItem>
-                  <MenuItem value="PAGA">Paga</MenuItem>
-                  <MenuItem value="VENCIDA">Vencida</MenuItem>
-                  <MenuItem value="CANCELADA">Cancelada</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Forma de Pagamento */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Forma de Pagamento</InputLabel>
-                <Select
-                  name="forma_pagamento"
-                  value={formData.forma_pagamento}
-                  onChange={handleChange}
-                  label="Forma de Pagamento"
-                >
-                  <MenuItem value="DINHEIRO">Dinheiro</MenuItem>
-                  <MenuItem value="PIX">PIX</MenuItem>
-                  <MenuItem value="CARTAO_CREDITO">Cartão de Crédito</MenuItem>
-                  <MenuItem value="CARTAO_DEBITO">Cartão de Débito</MenuItem>
-                  <MenuItem value="BOLETO">Boleto</MenuItem>
-                  <MenuItem value="TRANSFERENCIA">Transferência</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Observações */}
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Observações"
-                name="observacoes"
-                value={formData.observacoes}
-                onChange={handleChange}
-                multiline
-                rows={3}
-                placeholder="Informações adicionais sobre a despesa"
-              />
-            </Grid>
+            {id && (
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    name="is_active"
+                    value={formData.is_active}
+                    onChange={handleChange}
+                    label="Status"
+                    >
+                    <MenuItem value={true}>Ativo</MenuItem>
+                    <MenuItem value={false}>Inativo</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
 
             {/* Botões */}
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                 <Button
                   variant="outlined"
-                  onClick={() => navigate('/despesas')}
+                  onClick={() => navigate('/cadastros')}
                   disabled={loading}
                 >
                   Cancelar
@@ -339,8 +393,53 @@ const DespesaForm = () => {
           </Grid>
         </form>
       </Paper>
+
+      {/* Trocar Senha */}
+      {id && (
+        <Paper sx={{ p: 3 }}>
+        <form onSubmit={handlePasswordSubmit}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Nova Senha"
+                name="nova_senha"
+                type="password"
+                value={passwordData.nova_senha}
+                onChange={handlePasswordChange}
+                error={!!errors.nova_senha}
+                helperText={errors.nova_senha}
+                />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Confirmar Nova Senha"
+                name="confirmar_senha"
+                type="password"
+                value={passwordData.confirmar_senha}
+                onChange={handlePasswordChange}
+                error={!!errors.confirmar_senha}
+                helperText={errors.confirmar_senha}
+                />
+            </Grid>
+            <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                type="submit"
+                variant="outlined"
+                color="primary"
+                startIcon={savingPassword ? <CircularProgress size={20} color="inherit" /> : <LockIcon />}
+                disabled={savingPassword}
+                >
+                {savingPassword ? 'Alterando...' : 'Alterar Senha'}
+              </Button>
+            </Grid>
+          </Grid>
+        </form>
+        </Paper>
+      )}
     </Box>
   );
 };
 
-export default DespesaForm;
+export default CadastroUsuarioForm;

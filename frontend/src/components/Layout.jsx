@@ -43,6 +43,7 @@ const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isAdminChefe, isUsuarioEmpresa, getUserPhotoUrl, getUserInitials } = useAuth();
+  console.log(user);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
   const [isDrawerExpanded, setIsDrawerExpanded] = useState(true);

@@ -165,13 +165,13 @@ const DespesaForm = () => {
       <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/despesas')}
+          onClick={() => navigate('/cadastros')}
           variant="outlined"
         >
           Voltar
         </Button>
         <Typography variant="h4">
-          {id ? 'Editar Despesa' : 'Nova Despesa'}
+          {id ? 'Editar Empresa' : 'Nova Empresa'}
         </Typography>
       </Box>
 
