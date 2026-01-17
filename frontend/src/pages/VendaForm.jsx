@@ -21,6 +21,8 @@ import {
   TableHead,
   TableRow,
   Divider,
+  Grow,
+  Fade,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -45,6 +47,7 @@ const VendaForm = () => {
   const [loading, setLoading] = useState(false);
   const [clientes, setClientes] = useState([]);
   const [produtos, setProdutos] = useState([]);
+  const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
     cliente: '',
     data_venda: new Date().toISOString().split('T')[0],
@@ -59,6 +62,12 @@ const VendaForm = () => {
     quantidade: '1',
     preco_unitario: '',
   });
+
+  useEffect(() => {
+    // Ativa animação de entrada
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     loadClientes();
@@ -252,25 +261,35 @@ const VendaForm = () => {
   const totais = calcularTotal();
 
   return (
-    <Box>
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/vendas')}
-          variant="outlined"
-        >
-          Voltar
-        </Button>
-        <Typography variant="h4">
-          {id ? 'Editar Venda' : 'Nova Venda'}
-        </Typography>
-      </Box>
+    <Fade in={mounted} timeout={300}>
+      <Box>
+        <Grow in={mounted} timeout={400}>
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate('/vendas')}
+              variant="outlined"
+            >
+              Voltar
+            </Button>
+            <Typography variant="h4">
+              {id ? 'Editar Venda' : 'Nova Venda'}
+            </Typography>
+          </Box>
+        </Grow>
 
-      <form onSubmit={handleSubmit}>
-        <Grid container spacing={3}>
-          {/* Informações da Venda */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3 }}>
+        <form onSubmit={handleSubmit}>
+          <Grid container spacing={3}>
+            {/* Informações da Venda */}
+            <Grid item xs={12}>
+              <Grow in={mounted} timeout={500} style={{ transformOrigin: '0 0 0' }}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    boxShadow: mounted ? '0 8px 32px rgba(0, 0, 0, 0.1)' : 'none',
+                    transition: 'box-shadow 0.3s ease',
+                  }}
+                >
               <Typography variant="h6" sx={{ mb: 3 }}>
                 Informações da Venda
               </Typography>
@@ -386,12 +405,20 @@ const VendaForm = () => {
                   />
                 </Grid>
               </Grid>
-            </Paper>
-          </Grid>
+                </Paper>
+              </Grow>
+            </Grid>
 
-          {/* Adicionar Itens */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3 }}>
+            {/* Adicionar Itens */}
+            <Grid item xs={12}>
+              <Grow in={mounted} timeout={600} style={{ transformOrigin: '0 0 0' }}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    boxShadow: mounted ? '0 8px 32px rgba(0, 0, 0, 0.1)' : 'none',
+                    transition: 'box-shadow 0.3s ease',
+                  }}
+                >
               <Typography variant="h6" sx={{ mb: 3 }}>
                 Adicionar Produtos
               </Typography>
@@ -460,13 +487,21 @@ const VendaForm = () => {
                   </Button>
                 </Grid>
               </Grid>
-            </Paper>
-          </Grid>
+                </Paper>
+              </Grow>
+            </Grid>
 
-          {/* Lista de Itens */}
-          {itens.length > 0 && (
-            <Grid item xs={12}>
-              <Paper sx={{ p: 3 }}>
+            {/* Lista de Itens */}
+            {itens.length > 0 && (
+              <Grid item xs={12}>
+                <Grow in={mounted} timeout={700} style={{ transformOrigin: '0 0 0' }}>
+                  <Paper
+                    sx={{
+                      p: 3,
+                      boxShadow: mounted ? '0 8px 32px rgba(0, 0, 0, 0.1)' : 'none',
+                      transition: 'box-shadow 0.3s ease',
+                    }}
+                  >
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Itens da Venda
                 </Typography>
@@ -521,35 +556,39 @@ const VendaForm = () => {
                     Total: {formatCurrency(totais.total)}
                   </Typography>
                 </Box>
-              </Paper>
-            </Grid>
-          )}
+                  </Paper>
+                </Grow>
+              </Grid>
+            )}
 
-          {/* Botões */}
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate('/vendas')}
-                disabled={loading}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={
-                  loading ? <CircularProgress size={20} /> : <SaveIcon />
-                }
-                disabled={loading}
-              >
-                {loading ? 'Salvando...' : 'Salvar'}
-              </Button>
-            </Box>
+            {/* Botões */}
+            <Grid item xs={12}>
+              <Grow in={mounted} timeout={800}>
+                <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate('/vendas')}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    startIcon={
+                      loading ? <CircularProgress size={20} /> : <SaveIcon />
+                    }
+                    disabled={loading}
+                  >
+                    {loading ? 'Salvando...' : 'Salvar'}
+                  </Button>
+                </Box>
+              </Grow>
+            </Grid>
           </Grid>
-        </Grid>
-      </form>
-    </Box>
+        </form>
+      </Box>
+    </Fade>
   );
 };
 

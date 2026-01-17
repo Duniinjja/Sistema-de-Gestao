@@ -13,6 +13,8 @@ import {
   MenuItem,
   CircularProgress,
   InputAdornment,
+  Grow,
+  Fade,
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -33,6 +35,7 @@ const DespesaForm = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [categorias, setCategorias] = useState([]);
+  const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
     descricao: '',
     categoria: '',
@@ -43,6 +46,12 @@ const DespesaForm = () => {
     forma_pagamento: 'DINHEIRO',
     observacoes: '',
   });
+
+  useEffect(() => {
+    // Ativa animação de entrada
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     loadCategorias();
@@ -161,22 +170,32 @@ const DespesaForm = () => {
   }
 
   return (
-    <Box>
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/despesas')}
-          variant="outlined"
-        >
-          Voltar
-        </Button>
-        <Typography variant="h4">
-          {id ? 'Editar Despesa' : 'Nova Despesa'}
-        </Typography>
-      </Box>
+    <Fade in={mounted} timeout={300}>
+      <Box>
+        <Grow in={mounted} timeout={400}>
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate('/despesas')}
+              variant="outlined"
+            >
+              Voltar
+            </Button>
+            <Typography variant="h4">
+              {id ? 'Editar Despesa' : 'Nova Despesa'}
+            </Typography>
+          </Box>
+        </Grow>
 
-      <Paper sx={{ p: 3 }}>
-        <form onSubmit={handleSubmit}>
+        <Grow in={mounted} timeout={500} style={{ transformOrigin: '0 0 0' }}>
+          <Paper
+            sx={{
+              p: 3,
+              boxShadow: mounted ? '0 8px 32px rgba(0, 0, 0, 0.1)' : 'none',
+              transition: 'box-shadow 0.3s ease',
+            }}
+          >
+            <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             {/* Descrição */}
             <Grid item xs={12}>
@@ -338,8 +357,10 @@ const DespesaForm = () => {
             </Grid>
           </Grid>
         </form>
-      </Paper>
-    </Box>
+          </Paper>
+        </Grow>
+      </Box>
+    </Fade>
   );
 };
 

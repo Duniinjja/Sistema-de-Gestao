@@ -209,7 +209,16 @@ const Despesas = () => {
       </TableContainer>
 
       {/* Total de Despesas - no final da página */}
-      <Paper sx={{ p: 2, mt: 3, bgcolor: 'error.50', border: '1px solid', borderColor: 'error.200' }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          mt: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+        }}
+      >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="body1" color="text.secondary">
             Total de Despesas no Período ({despesas.length} {despesas.length === 1 ? 'registro' : 'registros'})
