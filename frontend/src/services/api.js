@@ -149,7 +149,8 @@ export const createCliente = (data) =>
   api.post('/vendas/clientes/', data);
 
 export const getClientes = (params) =>
-  api.get('/vendas/clientes/', { params });
+  api.get('/vendas/clientes/',  params );
+
 export const getCliente = (id) =>
   api.get(`/vendas/clientes/${id}/`);
 
